@@ -62,9 +62,16 @@ function App() {
       });
 
       if (!response.ok) {
-        if (response.status === 401) throw new Error('인증에 실패했습니다. 아이디와 비밀번호를 확인해주세요.');
-        if (response.status === 400) throw new Error('잘못된 요청입니다. (학기 등 확인 필요)');
-        throw new Error('채플 정보를 불러오는데 실패했습니다. (서버 오류)');
+        try {
+          const errData = await response.json();
+          if (response.status === 401) throw new Error(`인증에 실패했습니다. (${errData.error || '아이디와 패스워드를 확인해주세요'})`);
+          if (response.status === 400) throw new Error(`잘못된 요청입니다. (${errData.error || '학기 등 확인 필요'})`);
+          throw new Error(`서버 오류 발생: ${errData.error || '알 수 없는 에러'}`);
+        } catch (jsonErr) {
+          if (response.status === 401) throw new Error('인증에 실패했습니다. 아이디와 비밀번호를 확인해주세요.');
+          if (response.status === 400) throw new Error('잘못된 요청입니다. (학기 등 확인 필요)');
+          throw new Error('채플 정보를 불러오는데 실패했습니다. (서버 오류)');
+        }
       }
 
       const data: ChapelResponse = await response.json();
