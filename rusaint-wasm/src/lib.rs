@@ -215,13 +215,34 @@ const SWAGGER_HTML: &str = r#"<!DOCTYPE html>
 </body>
 </html>"#;
 
+fn cors_headers() -> Result<Headers> {
+    let headers = Headers::new();
+    headers.set("Access-Control-Allow-Origin", "*")?;
+    headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")?;
+    headers.set("Access-Control-Allow-Headers", "Content-Type")?;
+    Ok(headers)
+}
+
+fn cors_response(response: Response) -> Result<Response> {
+    let headers = cors_headers()?;
+    let mut resp_headers = response.headers().clone();
+    for (key, value) in headers.entries() {
+        resp_headers.set(&key, &value)?;
+    }
+    Ok(response.with_headers(resp_headers))
+}
+
 #[event(fetch)]
 async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
     console_error_panic_hook::set_once();
 
     let router = Router::new();
 
-    router
+    let response = router
+        .options("/chapel", |_, _| {
+            let headers = cors_headers()?;
+            Ok(Response::empty()?.with_headers(headers))
+        })
         .get("/openapi.json", |_, _| {
             let headers = Headers::new();
             headers.set("Content-Type", "application/json")?;
@@ -237,30 +258,30 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
             let body: ChapelRequest = match req.json().await {
                 Ok(b) => b,
                 Err(_) => {
-                    return Response::error(
+                    return cors_response(Response::error(
                         r#"{"error":"Invalid request body. Expected JSON with id, password, year, semester fields."}"#,
                         400,
-                    );
+                    )?);
                 }
             };
 
             let semester = match parse_semester(&body.semester) {
                 Ok(s) => s,
                 Err(e) => {
-                    return Response::error(
+                    return cors_response(Response::error(
                         format!(r#"{{"error":"Invalid semester: {}"}}"#, e),
                         400,
-                    );
+                    )?);
                 }
             };
 
             let session = match USaintSession::with_password(&body.id, &body.password).await {
                 Ok(s) => Arc::new(s),
                 Err(e) => {
-                    return Response::error(
+                    return cors_response(Response::error(
                         format!(r#"{{"error":"Authentication failed: {}"}}"#, e),
                         401,
-                    );
+                    )?);
                 }
             };
 
@@ -271,10 +292,10 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
             {
                 Ok(a) => a,
                 Err(e) => {
-                    return Response::error(
+                    return cors_response(Response::error(
                         format!(r#"{{"error":"Failed to initialize chapel app: {}"}}"#, e),
                         500,
-                    );
+                    )?);
                 }
             };
 
@@ -282,16 +303,18 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                 Ok(info) => {
                     let json = serde_json::to_string(&info)
                         .map_err(|e| Error::RustError(e.to_string()))?;
-                    let headers = Headers::new();
+                    let headers = cors_headers()?;
                     headers.set("Content-Type", "application/json")?;
                     Ok(Response::ok(json)?.with_headers(headers))
                 }
-                Err(e) => Response::error(
+                Err(e) => cors_response(Response::error(
                     format!(r#"{{"error":"Failed to fetch chapel info: {}"}}"#, e),
                     500,
-                ),
+                )?),
             }
         })
         .run(req, _env)
-        .await
+        .await;
+
+    response
 }

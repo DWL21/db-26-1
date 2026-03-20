@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// .wrangler/tmp/bundle-L2rwVk/strip-cf-connecting-ip-header.js
+// .wrangler/tmp/bundle-6hOjfU/strip-cf-connecting-ip-header.js
 function stripCfConnectingIPHeader(input, init) {
   const request = new Request(input, init);
   request.headers.delete("CF-Connecting-IP");
@@ -18,7 +18,7 @@ globalThis.fetch = new Proxy(globalThis.fetch, {
 
 // build/index.js
 import { WorkerEntrypoint as pt } from "cloudflare:workers";
-import Q from "./476a8d2b7acc8c49c71f2bb2ed4b57436817a5d5-index_bg.wasm";
+import Q from "./c734275b27c544206c3fd845ca626e9f76129a6b-index_bg.wasm";
 var E = /* @__PURE__ */ __name(class {
   __destroy_into_raw() {
     let t = this.__wbg_ptr;
@@ -488,11 +488,6 @@ function G() {
   }, __wbg_new_with_byte_offset_and_length_b2ec5bf7b2f35743: function(t, e, r) {
     let i = new Uint8Array(_(t), e >>> 0, r >>> 0);
     return s(i);
-  }, __wbg_new_with_headers_b74ae836d0e719e7: function() {
-    return g(function(t) {
-      let e = new Headers(_(t));
-      return s(e);
-    }, arguments);
   }, __wbg_new_with_length_825018a1616e9e55: function(t) {
     let e = new Uint8Array(t >>> 0);
     return s(e);
@@ -613,10 +608,10 @@ function G() {
     let e = _(t).view;
     return d(e) ? 0 : s(e);
   }, __wbindgen_cast_0000000000000001: function(t, e) {
-    let r = $(t, e, o.__wasm_bindgen_func_elem_2586, Z);
+    let r = $(t, e, o.__wasm_bindgen_func_elem_2579, Z);
     return s(r);
   }, __wbindgen_cast_0000000000000002: function(t, e) {
-    let r = $(t, e, o.__wasm_bindgen_func_elem_1928, Y);
+    let r = $(t, e, o.__wasm_bindgen_func_elem_1921, Y);
     return s(r);
   }, __wbindgen_cast_0000000000000003: function(t, e) {
     let r = h(t, e);
@@ -630,13 +625,13 @@ function G() {
 }
 __name(G, "G");
 function Y(n, t) {
-  o.__wasm_bindgen_func_elem_1929(n, t);
+  o.__wasm_bindgen_func_elem_1922(n, t);
 }
 __name(Y, "Y");
 function Z(n, t, e) {
   try {
     let u = o.__wbindgen_add_to_stack_pointer(-16);
-    o.__wasm_bindgen_func_elem_806(u, n, t, s(e));
+    o.__wasm_bindgen_func_elem_799(u, n, t, s(e));
     var r = f().getInt32(u + 0, true), i = f().getInt32(u + 4, true);
     if (i)
       throw y(r);
@@ -646,7 +641,7 @@ function Z(n, t, e) {
 }
 __name(Z, "Z");
 function tt(n, t, e, r) {
-  o.__wasm_bindgen_func_elem_817(n, t, s(e), s(r));
+  o.__wasm_bindgen_func_elem_810(n, t, s(e), s(r));
 }
 __name(tt, "tt");
 var et = ["bytes"];
@@ -948,7 +943,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-L2rwVk/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-6hOjfU/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -980,7 +975,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-L2rwVk/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-6hOjfU/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
