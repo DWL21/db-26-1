@@ -25,6 +25,196 @@ fn parse_semester(s: &str) -> Result<SemesterType> {
     }
 }
 
+const OPENAPI_SPEC: &str = r##"{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "rusaint Chapel API",
+    "description": "SSU u-saint 채플 정보 조회 API. rusaint 라이브러리를 WASM으로 컴파일하여 Cloudflare Worker에서 실행합니다.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/chapel": {
+      "post": {
+        "summary": "채플 정보 조회",
+        "description": "SSO 아이디/비밀번호로 인증 후 해당 학기의 채플 정보를 반환합니다.",
+        "operationId": "getChapelInfo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChapelRequest" },
+              "example": {
+                "id": "20211234",
+                "password": "mypassword",
+                "year": 2026,
+                "semester": "1"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "채플 정보 조회 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChapelInformation" }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청 (파라미터 오류)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "error": "Invalid semester: 3" }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "error": "Authentication failed: 아이디와 비밀번호가 일치하지 않습니다." }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChapelRequest": {
+        "type": "object",
+        "required": ["id", "password", "year", "semester"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "학번 (SSO ID)",
+            "example": "20211234"
+          },
+          "password": {
+            "type": "string",
+            "description": "비밀번호 (SSO Password)",
+            "example": "mypassword"
+          },
+          "year": {
+            "type": "integer",
+            "description": "학년도",
+            "example": 2026
+          },
+          "semester": {
+            "type": "string",
+            "description": "학기 (1, 2, summer, winter)",
+            "enum": ["1", "2", "summer", "winter"],
+            "example": "1"
+          }
+        }
+      },
+      "ChapelInformation": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer", "description": "학년도", "example": 2026 },
+          "semester": {
+            "type": "string",
+            "description": "학기",
+            "enum": ["One", "Two", "Summer", "Winter"],
+            "example": "One"
+          },
+          "general_information": { "$ref": "#/components/schemas/GeneralChapelInformation" },
+          "attendances": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ChapelAttendance" }
+          },
+          "absence_requests": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ChapelAbsenceRequest" }
+          }
+        }
+      },
+      "GeneralChapelInformation": {
+        "type": "object",
+        "properties": {
+          "division": { "type": "integer", "description": "분반", "example": 2150101507 },
+          "chapel_time": { "type": "string", "description": "시간표", "example": "수 10:30-11:20 (08110-반광준)" },
+          "chapel_room": { "type": "string", "description": "강의실", "example": "한경직기념관 08110" },
+          "floor_level": { "type": "integer", "description": "층수", "example": 2 },
+          "seat_number": { "type": "string", "description": "좌석번호", "example": "G - 8 - 2" },
+          "absence_time": { "type": "integer", "description": "결석일수", "example": 0 },
+          "result": { "type": "string", "description": "성적", "example": "P" },
+          "note": { "type": "string", "description": "비고", "example": "" }
+        }
+      },
+      "ChapelAttendance": {
+        "type": "object",
+        "properties": {
+          "division": { "type": "integer", "description": "분반" },
+          "class_date": { "type": "string", "description": "수업일자", "example": "2026.03.11" },
+          "category": { "type": "string", "description": "강의구분", "example": "메시지 채플" },
+          "instructor": { "type": "string", "description": "강사", "example": "반광준" },
+          "instructor_department": { "type": "string", "description": "소속", "example": "교목실" },
+          "title": { "type": "string", "description": "제목" },
+          "attendance": { "type": "string", "description": "출결상태", "example": "출석" },
+          "result": { "type": "string", "description": "평가", "example": "높음" },
+          "note": { "type": "string", "description": "비고" }
+        }
+      },
+      "ChapelAbsenceRequest": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer", "description": "학년도" },
+          "semester": { "type": "string", "description": "학기" },
+          "absence_detail": { "type": "string", "description": "결석구분상세" },
+          "absence_start": { "type": "string", "description": "결석시작일자" },
+          "absence_end": { "type": "string", "description": "결석종료일자" },
+          "absence_reason_kr": { "type": "string", "description": "결석사유(국문)" },
+          "absence_reason_en": { "type": "string", "description": "결석사유(영문)" },
+          "application_date": { "type": "string", "description": "신청일자" },
+          "approval_date": { "type": "string", "description": "승인일자" },
+          "denial_reason": { "type": "string", "description": "거부사유" },
+          "status": { "type": "string", "description": "상태" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "description": "에러 메시지" }
+        }
+      }
+    }
+  }
+}"##;
+
+const SWAGGER_HTML: &str = r#"<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>rusaint Chapel API - Swagger UI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: '/openapi.json',
+      dom_id: '#swagger-ui',
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+      layout: 'BaseLayout'
+    });
+  </script>
+</body>
+</html>"#;
+
 #[event(fetch)]
 async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
     console_error_panic_hook::set_once();
@@ -32,6 +222,17 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
     let router = Router::new();
 
     router
+        .get("/openapi.json", |_, _| {
+            let headers = Headers::new();
+            headers.set("Content-Type", "application/json")?;
+            headers.set("Access-Control-Allow-Origin", "*")?;
+            Ok(Response::ok(OPENAPI_SPEC)?.with_headers(headers))
+        })
+        .get("/docs", |_, _| {
+            let headers = Headers::new();
+            headers.set("Content-Type", "text/html; charset=utf-8")?;
+            Ok(Response::ok(SWAGGER_HTML)?.with_headers(headers))
+        })
         .post_async("/chapel", |mut req, _ctx| async move {
             let body: ChapelRequest = match req.json().await {
                 Ok(b) => b,
