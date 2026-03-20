@@ -1,4 +1,4 @@
-name = "rusaint-chapel"
+name = "db-26-1"
 main = "build/worker/shim.mjs"
 compatibility_date = "2024-11-01"
 
