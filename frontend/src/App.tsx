@@ -120,7 +120,16 @@ function App() {
             </div>
           </div>
 
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '1rem' }}>출결 기록</h3>
+          <div className="seating-chart-container">
+            <div className="seating-chart-title">한경직기념관 좌석안내도</div>
+            <img 
+              src="https://chaplain.ssu.ac.kr/wp-content/uploads/sites/7/2018/05/ssu01_02_05_plan.jpg" 
+              alt="한경직기념관 좌석 구조" 
+              className="seating-chart-img" 
+            />
+          </div>
+
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)', fontSize: '1rem', marginTop: '1.5rem' }}>출결 기록</h3>
           <div className="attendance-list">
             {attendances.length === 0 ? (
               <div className="empty-state">출결 기록이 없습니다.</div>
