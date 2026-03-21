@@ -37,7 +37,6 @@ function App() {
 
   // Persisted auth (restored from localStorage on mount)
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('ssu_stoken'));
-  const [storedUserId, setStoredUserId] = useState<string | null>(() => localStorage.getItem('ssu_userid'));
 
   // Chapel data states
   const [year, setYear] = useState('2026');
@@ -48,14 +47,14 @@ function App() {
 
   const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
 
-  const fetchChapelData = async (id: string, tok: string, yr: string, sem: string) => {
+  const fetchChapelData = async (tok: string, yr: string, sem: string) => {
     setLoading(true);
     setError(null);
     try {
       const response = await fetch(`${baseUrl}/chapel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, token: tok, year: parseInt(yr), semester: sem }),
+        body: JSON.stringify({ token: tok, year: parseInt(yr), semester: sem }),
       });
 
       if (!response.ok) {
@@ -63,7 +62,6 @@ function App() {
           localStorage.removeItem('ssu_stoken');
           localStorage.removeItem('ssu_userid');
           setToken(null);
-          setStoredUserId(null);
           setAuthError('인증이 만료되었습니다. 다시 로그인해주세요.');
           setShowLoginModal(true);
           return;
@@ -120,10 +118,9 @@ function App() {
       localStorage.setItem('ssu_stoken', newToken);
       localStorage.setItem('ssu_userid', id);
       setToken(newToken);
-      setStoredUserId(id);
       setShowLoginModal(false);
       setPassword('');
-      fetchChapelData(id, newToken, year, semester);
+      fetchChapelData(newToken, year, semester);
     } catch (err: any) {
       setAuthError(err.message || '알 수 없는 오류가 발생했습니다.');
     } finally {
@@ -135,7 +132,6 @@ function App() {
     localStorage.removeItem('ssu_stoken');
     localStorage.removeItem('ssu_userid');
     setToken(null);
-    setStoredUserId(null);
     setChapelData(null);
     setUserId('');
     setPassword('');
@@ -148,8 +144,8 @@ function App() {
   };
 
   useEffect(() => {
-    if (token && storedUserId) {
-      fetchChapelData(storedUserId, token, year, semester);
+    if (token) {
+      fetchChapelData(token, year, semester);
     }
   }, []);
 
@@ -211,7 +207,7 @@ function App() {
               <button
                 className="btn-primary"
                 style={{ width: 'auto', marginTop: 0, padding: '0.75rem 1rem' }}
-                onClick={() => storedUserId && token && fetchChapelData(storedUserId, token, year, semester)}
+                onClick={() => token && fetchChapelData(token, year, semester)}
                 disabled={loading}
               >
                 {loading ? <><div className="spinner"></div>조회 중...</> : '조회'}

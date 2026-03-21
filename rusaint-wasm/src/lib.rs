@@ -21,7 +21,6 @@ struct AuthTokenResponse {
 
 #[derive(Deserialize)]
 struct ChapelRequest {
-    id: String,
     token: String,
     year: u32,
     semester: String,
@@ -102,7 +101,6 @@ const OPENAPI_SPEC: &str = r##"{
             "application/json": {
               "schema": { "$ref": "#/components/schemas/ChapelRequest" },
               "example": {
-                "id": "20211234",
                 "token": "<sso_token>",
                 "year": 2026,
                 "semester": "1"
@@ -178,13 +176,8 @@ const OPENAPI_SPEC: &str = r##"{
       },
       "ChapelRequest": {
         "type": "object",
-        "required": ["id", "token", "year", "semester"],
+        "required": ["token", "year", "semester"],
         "properties": {
-          "id": {
-            "type": "string",
-            "description": "학번 (SSO ID)",
-            "example": "20211234"
-          },
           "token": {
             "type": "string",
             "description": "SSO sToken (/auth/token 으로 발급)",
@@ -372,7 +365,7 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                 Ok(b) => b,
                 Err(_) => {
                     return cors_response(Response::error(
-                        r#"{"error":"Invalid request body. Expected JSON with id, token, year, semester fields."}"#,
+                        r#"{"error":"Invalid request body. Expected JSON with token, year, semester fields."}"#,
                         400,
                     )?);
                 }
@@ -388,7 +381,7 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                 }
             };
 
-            let session = match USaintSession::with_token(&body.id, &body.token).await {
+            let session = match USaintSession::with_token("", &body.token).await {
                 Ok(s) => Arc::new(s),
                 Err(e) => {
                     return cors_response(Response::error(
