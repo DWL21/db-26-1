@@ -399,6 +399,7 @@ function App() {
     localStorage.removeItem('ssu_userid');
     setToken(null);
     setChapelData(null);
+    setLoading(false);
     setUserId('');
     setPassword('');
     setError(null);
