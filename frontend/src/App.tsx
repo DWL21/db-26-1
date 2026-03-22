@@ -448,14 +448,7 @@ function App() {
               </div>
 
               <button type="submit" className="btn-primary" disabled={authLoading}>
-                {authLoading ? (
-                  <>
-                    <div className="spinner"></div>
-                    로그인 중...
-                  </>
-                ) : (
-                  '로그인'
-                )}
+                {authLoading ? '로그인 중...' : '로그인'}
               </button>
             </form>
 

@@ -385,7 +385,7 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
             }
 
             // KV 미스 — SSO 서버 호출 (지연 재시도)
-            let retry_delays_ms: [u32; 3] = [0, 500, 1000];
+            let retry_delays_ms: [u32; 2] = [0, 200];
             let mut last_err = String::new();
             for &delay in retry_delays_ms.iter() {
                 if delay > 0 {
