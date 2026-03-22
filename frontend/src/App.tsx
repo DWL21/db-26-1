@@ -38,17 +38,14 @@ function App() {
   // Persisted auth (restored from localStorage on mount)
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('ssu_stoken'));
 
-  // 현재 연도까지 동적 생성 (2024~)
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: currentYear - 2023 }, (_, i) => 2024 + i).reverse();
-
-  // 2~8월 → 1학기, 9~1월 → 2학기
+  // 현재 연도/학기 자동 결정 (2~8월 → 1학기, 9~1월 → 2학기)
   const currentMonth = new Date().getMonth() + 1;
-  const defaultSemester = currentMonth >= 2 && currentMonth <= 8 ? '1' : '2';
+  const currentYear = String(new Date().getFullYear());
+  const currentSemester = currentMonth >= 9 ? '2' : '1';
 
   // Chapel data states
-  const [year, setYear] = useState(String(currentYear));
-  const [semester, setSemester] = useState(defaultSemester);
+  const [year] = useState(currentYear);
+  const [semester] = useState(currentSemester);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chapelData, setChapelData] = useState<ChapelResponse | null>(null);
@@ -177,89 +174,81 @@ function App() {
         </div>
 
         {/* 나의 채플 정보 */}
-        <h3 className="section-title">나의 채플 정보</h3>
-
-        {/* 연도/학기 셀렉터 (로그인 후 메인 페이지에 표시) */}
-        {token && (
-          <div className="semester-selector">
-            <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-              <label htmlFor="year">연도</label>
-              <select
-                id="year"
-                className="input-field"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                disabled={loading}
-              >
-                {availableYears.map((y) => (
-                  <option key={y} value={String(y)}>{y}년</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-              <label htmlFor="semester">학기</label>
-              <select
-                id="semester"
-                className="input-field"
-                value={semester}
-                onChange={(e) => setSemester(e.target.value)}
-                disabled={loading}
-              >
-                <option value="1">1학기</option>
-                <option value="2">2학기</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button
-                className="btn-primary"
-                style={{ width: 'auto', marginTop: 0, padding: '0.75rem 1rem' }}
-                onClick={() => token && fetchChapelData(token, year, semester)}
-                disabled={loading}
-              >
-                {loading ? <><div className="spinner"></div>조회 중...</> : '조회'}
-              </button>
-            </div>
-          </div>
-        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', marginTop: '0.25rem' }}>
+          <h3 className="section-title" style={{ margin: 0 }}>나의 채플 정보</h3>
+          {token && (
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+              {year}년 {semester}학기
+            </span>
+          )}
+        </div>
 
         {error && <div className="alert-error">{error}</div>}
 
-        {chapelData ? (
-          <>
-            <div className="dashboard-grid">
-              <div className="stat-card">
-                <span className="stat-label">채플 시간</span>
-                <span className="stat-value">{chapelData.general_information.chapel_time.split('(')[0].trim()}</span>
-                <span className="stat-subtitle">{chapelData.general_information.chapel_time.includes('(') ? chapelData.general_information.chapel_time.split('(')[1].replace(')', '') : ''}</span>
-              </div>
+        {chapelData ? (() => {
+          const totalSessions = chapelData.attendances.length;
+          const attendedCount = chapelData.attendances.filter(a => a.attendance === '출석').length;
+          const absentCount = chapelData.general_information.absence_time;
+          const requiredAttendance = Math.ceil(totalSessions * 0.8);
+          const remainingAbsences = (totalSessions - requiredAttendance) - absentCount;
+          const isOfficiallyPassed = chapelData.general_information.result === 'P';
 
-              <div className="stat-card">
-                <span className="stat-label">지정 좌석</span>
-                <span className="stat-value" style={{ color: '#a855f7' }}>{chapelData.general_information.seat_number}</span>
-                <span className="stat-subtitle">{chapelData.general_information.chapel_room} ({chapelData.general_information.floor_level}층)</span>
-              </div>
+          return (
+            <>
+              <div className="dashboard-grid">
+                <div className="stat-card">
+                  <span className="stat-label">채플 시간</span>
+                  <span className="stat-value">{chapelData.general_information.chapel_time.split('(')[0].trim()}</span>
+                  <span className="stat-subtitle">{chapelData.general_information.chapel_time.includes('(') ? chapelData.general_information.chapel_time.split('(')[1].replace(')', '') : ''}</span>
+                </div>
 
-              <div className="stat-card">
-                <span className="stat-label">결석 횟수 / 결과</span>
-                <span className="stat-value">
-                  {chapelData.general_information.absence_time}회
-                  <span className={`badge ${chapelData.general_information.result === 'P' ? 'success' : ''}`} style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }}>
-                    {chapelData.general_information.result || '진행중'}
+                <div className="stat-card">
+                  <span className="stat-label">지정 좌석</span>
+                  <span className="stat-value" style={{ color: '#a855f7' }}>{chapelData.general_information.seat_number}</span>
+                  <span className="stat-subtitle">{chapelData.general_information.chapel_room} ({chapelData.general_information.floor_level}층)</span>
+                </div>
+
+                <div className="stat-card">
+                  <span className="stat-label">출결 현황</span>
+                  <span className="stat-value">
+                    출석 {attendedCount}
+                    <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--text-secondary)' }}> / {totalSessions}회</span>
                   </span>
-                </span>
+                  <span className="stat-subtitle" style={{
+                    color: isOfficiallyPassed ? 'var(--success-color)'
+                      : remainingAbsences > 0 ? 'var(--success-color)'
+                      : remainingAbsences === 0 ? '#d97706'
+                      : 'var(--error-color)'
+                  }}>
+                    {isOfficiallyPassed
+                      ? '합격'
+                      : remainingAbsences > 0
+                      ? `결석 ${remainingAbsences}회 더 가능`
+                      : remainingAbsences === 0
+                      ? '결석 한도 도달'
+                      : `한도 ${Math.abs(remainingAbsences)}회 초과`}
+                  </span>
+                </div>
               </div>
+            </>
+          );
+        })() : (
+          loading ? (
+            <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              <div className="spinner" style={{ margin: '0 auto 0.75rem', borderColor: '#e5e7eb', borderTopColor: 'var(--primary)' }}></div>
+              채플 정보를 불러오는 중...
             </div>
-          </>
-        ) : (
-          !token && (
-            <div className="login-prompt-card">
-              <div className="login-prompt-icon">🔒</div>
-              <p className="login-prompt-text">로그인하여 내 채플 정보를 확인하세요</p>
-              <p className="login-prompt-sub">좌석 배치, 출결 현황 등 개인 채플 정보를 조회할 수 있습니다.</p>
-              <button className="btn-login-prompt" onClick={openLoginModal}>
-                로그인하기
-              </button>
-            </div>
+          ) : (
+            !token && (
+              <div className="login-prompt-card">
+                <div className="login-prompt-icon">🔒</div>
+                <p className="login-prompt-text">로그인하여 내 채플 정보를 확인하세요</p>
+                <p className="login-prompt-sub">좌석 배치, 출결 현황 등 개인 채플 정보를 조회할 수 있습니다.</p>
+                <button className="btn-login-prompt" onClick={openLoginModal}>
+                  로그인하기
+                </button>
+              </div>
+            )
           )
         )}
 

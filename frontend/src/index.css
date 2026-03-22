@@ -460,12 +460,6 @@ body {
   color: var(--text-primary);
 }
 
-.semester-selector {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
 /* Tablet & Desktop Adjustments */
 @media (min-width: 640px) {
   #root {
