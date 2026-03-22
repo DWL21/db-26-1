@@ -23,7 +23,6 @@ const FLOOR_SECTIONS: Record<number, string[]> = {
 
 function SeatViewer({ seatNumber, floorLevel, chapelRoom }: SeatViewerProps) {
   const { section, row, col } = parseSeat(seatNumber);
-  const sections = FLOOR_SECTIONS[floorLevel] ?? [];
 
   return (
     <div className="seat-viewer-card">
@@ -85,6 +84,48 @@ function SeatViewer({ seatNumber, floorLevel, chapelRoom }: SeatViewerProps) {
             );
           })}
         </div>
+        {/* 구역 좌석 배치도 */}
+        {section && row && col && (() => {
+          const userRow = parseInt(row);
+          const userCol = parseInt(col);
+          if (isNaN(userRow) || isNaN(userCol)) return null;
+          const maxRow = Math.max(userRow + 2, 8);
+          const maxCol = Math.max(userCol + 3, 7);
+          return (
+            <div className="seat-section-map">
+              <div className="seat-section-title">{section}구역 좌석 배치</div>
+              <div className="seat-section-stage-hint">↑ 무대</div>
+              <div className="seat-section-scroll">
+                <div className="seat-grid-header">
+                  <div className="seat-label-spacer" />
+                  {Array.from({ length: maxCol }, (_, i) => (
+                    <div key={i + 1} className={`seat-col-label${i + 1 === userCol ? ' my-col' : ''}`}>
+                      {i + 1}
+                    </div>
+                  ))}
+                </div>
+                {Array.from({ length: maxRow }, (_, ri) => {
+                  const r = ri + 1;
+                  return (
+                    <div key={r} className="seat-grid-row">
+                      <div className={`seat-row-label${r === userRow ? ' my-row' : ''}`}>{r}</div>
+                      {Array.from({ length: maxCol }, (_, ci) => {
+                        const c = ci + 1;
+                        const isMine = r === userRow && c === userCol;
+                        return (
+                          <div key={c} className={`seat-cell${isMine ? ' my-seat' : ''}`}>
+                            {isMine ? '★' : ''}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="chapel-mini-footer">
           <span className="you-badge">
             내 자리: {section ?? '?'}구역{row ? ` ${row}행` : ''}{col ? ` ${col}열` : ''}
