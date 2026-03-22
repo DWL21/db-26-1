@@ -175,10 +175,6 @@ function SeatViewer({ seatNumber, floorLevel, chapelRoom }: SeatViewerProps) {
           <div className="seat-big-value">{col ?? '-'}</div>
           <div className="seat-meta-label">열</div>
         </div>
-        <div className="seat-location-box">
-          <div className="seat-floor-pill">{floorLevel}층</div>
-          <div className="seat-room-text">{chapelRoom}</div>
-        </div>
       </div>
 
       <div className="chapel-mini-map">
