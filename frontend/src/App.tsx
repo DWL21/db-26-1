@@ -1,14 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 
-// 구역별 최대 열 수 (실제 배치도 기준)
-// 1층: A(좌측fan), B, C(중앙), D, E(우측fan)
-// 2층: F(좌), G, H(중앙), I, J(우)
+// ── 상수 ──────────────────────────────────────────────
+const FLOOR_2_MAX_ROW = 6; // 2층은 1~6행, 7행부터 3층
 const SECTION_MAX_COLS: Record<string, number> = {
   A: 6,  B: 7,  C: 11, D: 7,  E: 6,
   F: 9,  G: 7,  H: 9,  I: 6,  J: 7,
 };
+const SECTIONS_1F  = ['A', 'B', 'C', 'D', 'E'];
+const SECTIONS_23F = ['F', 'G', 'H', 'I', 'J'];
+const FLOOR_GROUPS = [
+  { key: '1',  label: '1층',   sections: SECTIONS_1F  },
+  { key: '23', label: '2·3층', sections: SECTIONS_23F },
+];
 
-// "G - 8 - 2" 형식 파싱 (구역 - 행 - 열)
+// ── 좌석 번호 파싱 ("G - 8 - 2" → section/row/col) ───
 function parseSeat(seatStr: string): { section: string | null; row: string | null; col: string | null } {
   const m3 = seatStr.match(/^([A-Za-z]+)\s*-\s*(\d+)\s*-\s*(\d+)$/);
   if (m3) return { section: m3[1].toUpperCase(), row: m3[2], col: m3[3] };
@@ -17,15 +22,132 @@ function parseSeat(seatStr: string): { section: string | null; row: string | nul
   return { section: null, row: null, col: seatStr };
 }
 
+// ── 강의실 위치 미니맵 ────────────────────────────────
+function ChapelMiniMap({
+  displaySection,
+  userSection,
+  onSectionClick,
+}: {
+  displaySection: string | null;
+  userSection: string | null;
+  onSectionClick: (s: string) => void;
+}) {
+  const userGroup  = SECTIONS_23F.includes(userSection  ?? '') ? '23' : '1';
+  const viewGroup  = SECTIONS_23F.includes(displaySection ?? '') ? '23' : '1';
+
+  return (
+    <div className="chapel-floors-container">
+      <div className="chapel-stage-bar">중앙무대</div>
+      {FLOOR_GROUPS.map(({ key, label, sections }) => {
+        const isUserFloor = key === userGroup && userSection !== null;
+        const isViewFloor = key === viewGroup && displaySection !== null;
+        const rowClass = isUserFloor ? 'active-floor' : isViewFloor ? 'active-floor' : 'inactive-floor';
+        return (
+          <div key={key} className={`chapel-floor-row ${rowClass}`}>
+            <span className="chapel-floor-label">{label}</span>
+            <div className="chapel-floor-sections">
+              {sections.map(s => {
+                const isViewed = s === displaySection;
+                const isUser   = s === userSection;
+                let cls = 'chapel-section-cell clickable';
+                if (isViewed) cls += ' active';
+                if (isUser && !isViewed) cls += ' user-marker';
+                return (
+                  <div key={s} className={cls} onClick={() => onSectionClick(s)} title={`${s}구역`}>
+                    {s}
+                    {isUser && !isViewed && <span className="user-dot" />}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── 구역 좌석 배치도 ──────────────────────────────────
+function SeatSectionGrid({
+  section,
+  userRow,
+  userCol,
+}: {
+  section: string;
+  userRow?: number;
+  userCol?: number;
+}) {
+  const maxCol    = SECTION_MAX_COLS[section] ?? 8;
+  const is23F     = SECTIONS_23F.includes(section);
+  const totalRows = Math.max(userRow ? userRow + 2 : 0, is23F ? 11 : 12);
+
+  const rows: React.ReactNode[] = [];
+  for (let r = 1; r <= totalRows; r++) {
+    if (is23F && r === FLOOR_2_MAX_ROW + 1) {
+      rows.push(
+        <div key="corridor" className="seat-floor-corridor">
+          <span>— 복도 —</span>
+          <span className="corridor-hint">2층 ↑  ↓ 3층</span>
+        </div>
+      );
+    }
+    const isMineRow = r === userRow;
+    rows.push(
+      <div key={r} className="seat-grid-row">
+        <div className={`seat-row-label${isMineRow ? ' my-row' : ''}`}>{r}</div>
+        {Array.from({ length: maxCol }, (_, ci) => {
+          const c = ci + 1;
+          const isMine = isMineRow && c === userCol;
+          return (
+            <div key={c} className={`seat-cell${isMine ? ' my-seat' : ''}`}>
+              {isMine ? '★' : ''}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="seat-section-map">
+      <div className="seat-section-title">
+        {section}구역 좌석 배치{is23F ? <span className="seat-section-floor-tag">2·3층</span> : ''}
+      </div>
+      <div className="seat-section-stage-hint">↑ 무대</div>
+      <div className="seat-section-scroll">
+        <div className="seat-grid-header">
+          <div className="seat-label-spacer" />
+          {Array.from({ length: maxCol }, (_, i) => (
+            <div key={i + 1} className={`seat-col-label${i + 1 === userCol ? ' my-col' : ''}`}>
+              {i + 1}
+            </div>
+          ))}
+        </div>
+        {rows}
+      </div>
+    </div>
+  );
+}
+
+// ── 나의 지정 좌석 뷰어 (로그인 후) ──────────────────
 interface SeatViewerProps {
   seatNumber: string;
   floorLevel: number;
   chapelRoom: string;
 }
 
-
 function SeatViewer({ seatNumber, floorLevel, chapelRoom }: SeatViewerProps) {
   const { section, row, col } = parseSeat(seatNumber);
+  const [viewSection, setViewSection] = useState<string | null>(null);
+
+  const userRow = row ? parseInt(row) : undefined;
+  const userCol = col ? parseInt(col) : undefined;
+  const displaySection = viewSection ?? section;
+  const isViewingOwn   = !viewSection || viewSection === section;
+
+  const handleSectionClick = (s: string) => {
+    setViewSection(prev => (prev === s || s === section) && !prev ? null : s === section ? null : s);
+  };
 
   return (
     <div className="seat-viewer-card">
@@ -60,75 +182,28 @@ function SeatViewer({ seatNumber, floorLevel, chapelRoom }: SeatViewerProps) {
       </div>
 
       <div className="chapel-mini-map">
-        <div className="chapel-mini-label">강의실 위치 안내</div>
-        <div className="chapel-floors-container">
-          <div className="chapel-stage-bar">중앙무대</div>
-          {([
-            { floor: 1, floorSections: ['A', 'B', 'C', 'D', 'E'] },
-            { floor: 2, floorSections: ['F', 'G', 'H', 'I', 'J'] },
-            { floor: 3, floorSections: [] },
-          ] as { floor: number; floorSections: string[] }[]).map(({ floor, floorSections }) => {
-            const isActive = floor === floorLevel;
-            return (
-              <div key={floor} className={`chapel-floor-row${isActive ? ' active-floor' : ' inactive-floor'}`}>
-                <span className="chapel-floor-label">{floor}층</span>
-                <div className="chapel-floor-sections">
-                  {floorSections.length > 0 ? floorSections.map(s => (
-                    <div key={s} className={`chapel-section-cell${s === section && isActive ? ' active' : ''}`}>
-                      {s}
-                    </div>
-                  )) : (
-                    <div className={`chapel-section-cell no-label${isActive ? ' active' : ''}`}>
-                      {isActive && section ? `${section}구역` : '좌석'}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="chapel-mini-label-row">
+          <span className="chapel-mini-label">강의실 위치 안내</span>
+          {viewSection && viewSection !== section && (
+            <button className="view-reset-btn" onClick={() => setViewSection(null)}>
+              내 자리로
+            </button>
+          )}
         </div>
-        {/* 구역 좌석 배치도 */}
-        {section && row && col && (() => {
-          const userRow = parseInt(row);
-          const userCol = parseInt(col);
-          if (isNaN(userRow) || isNaN(userCol)) return null;
-          const maxRow = Math.max(userRow + 2, 8);
-          const sectionColMax = section ? (SECTION_MAX_COLS[section] ?? 8) : 8;
-          const maxCol = Math.max(userCol, sectionColMax);
-          return (
-            <div className="seat-section-map">
-              <div className="seat-section-title">{section}구역 좌석 배치</div>
-              <div className="seat-section-stage-hint">↑ 무대</div>
-              <div className="seat-section-scroll">
-                <div className="seat-grid-header">
-                  <div className="seat-label-spacer" />
-                  {Array.from({ length: maxCol }, (_, i) => (
-                    <div key={i + 1} className={`seat-col-label${i + 1 === userCol ? ' my-col' : ''}`}>
-                      {i + 1}
-                    </div>
-                  ))}
-                </div>
-                {Array.from({ length: maxRow }, (_, ri) => {
-                  const r = ri + 1;
-                  return (
-                    <div key={r} className="seat-grid-row">
-                      <div className={`seat-row-label${r === userRow ? ' my-row' : ''}`}>{r}</div>
-                      {Array.from({ length: maxCol }, (_, ci) => {
-                        const c = ci + 1;
-                        const isMine = r === userRow && c === userCol;
-                        return (
-                          <div key={c} className={`seat-cell${isMine ? ' my-seat' : ''}`}>
-                            {isMine ? '★' : ''}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
+
+        <ChapelMiniMap
+          displaySection={displaySection}
+          userSection={section}
+          onSectionClick={handleSectionClick}
+        />
+
+        {displaySection && (
+          <SeatSectionGrid
+            section={displaySection}
+            userRow={isViewingOwn ? userRow : undefined}
+            userCol={isViewingOwn ? userCol : undefined}
+          />
+        )}
 
         <div className="chapel-mini-footer">
           <span className="you-badge">
@@ -140,6 +215,52 @@ function SeatViewer({ seatNumber, floorLevel, chapelRoom }: SeatViewerProps) {
   );
 }
 
+// ── 구역 탐색 (비로그인) ─────────────────────────────
+function SectionBrowser() {
+  const [viewSection, setViewSection] = useState<string | null>(null);
+
+  const handleClick = (s: string) =>
+    setViewSection(prev => (prev === s ? null : s));
+
+  return (
+    <div className="section-browser-card">
+      <div className="section-browser-title">구역 탐색</div>
+      <p className="section-browser-desc">구역을 선택하면 좌석 배치를 확인할 수 있습니다.</p>
+
+      <div className="section-btn-groups">
+        {FLOOR_GROUPS.map(({ key, label, sections }) => (
+          <div key={key} className="section-btn-group">
+            <span className="section-group-label">{label}</span>
+            <div className="section-btn-row">
+              {sections.map(s => (
+                <button
+                  key={s}
+                  className={`section-btn${viewSection === s ? ' active' : ''}`}
+                  onClick={() => handleClick(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {viewSection && (
+        <Fragment>
+          <ChapelMiniMap
+            displaySection={viewSection}
+            userSection={null}
+            onSectionClick={handleClick}
+          />
+          <SeatSectionGrid section={viewSection} />
+        </Fragment>
+      )}
+    </div>
+  );
+}
+
+// ── 데이터 타입 ──────────────────────────────────────
 interface ChapelResponse {
   year: number;
   semester: string;
@@ -167,29 +288,26 @@ interface ChapelResponse {
   absence_requests: any[];
 }
 
+// ── 메인 앱 ──────────────────────────────────────────
 function App() {
-  // Auth states
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [userId, setUserId] = useState('');
+  const [userId, setUserId]     = useState('');
   const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [authError, setAuthError]   = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Persisted auth (restored from localStorage on mount)
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('ssu_stoken'));
 
-  // 현재 연도/학기 자동 결정 (2~8월 → 1학기, 9~1월 → 2학기)
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = String(new Date().getFullYear());
+  const currentMonth   = new Date().getMonth() + 1;
+  const currentYear    = String(new Date().getFullYear());
   const currentSemester = currentMonth >= 9 ? '2' : '1';
 
-  // Chapel data states
-  const [year] = useState(currentYear);
+  const [year]     = useState(currentYear);
   const [semester] = useState(currentSemester);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]         = useState(false);
   const [showSeatingImage, setShowSeatingImage] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [chapelData, setChapelData] = useState<ChapelResponse | null>(null);
+  const [error, setError]             = useState<string | null>(null);
+  const [chapelData, setChapelData]   = useState<ChapelResponse | null>(null);
 
   const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
 
@@ -202,7 +320,6 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: tok, year: parseInt(yr), semester: sem }),
       });
-
       if (!response.ok) {
         if (response.status === 401) {
           localStorage.removeItem('ssu_stoken');
@@ -220,9 +337,7 @@ function App() {
         } catch (_) {}
         throw new Error(errMsg);
       }
-
-      const data: ChapelResponse = await response.json();
-      setChapelData(data);
+      setChapelData(await response.json());
     } catch (err: any) {
       setError(err.message || '알 수 없는 오류가 발생했습니다.');
     } finally {
@@ -230,23 +345,17 @@ function App() {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!userId || !password) {
-      setAuthError('아이디와 비밀번호를 입력해주세요.');
-      return;
-    }
-
+    if (!userId || !password) { setAuthError('아이디와 비밀번호를 입력해주세요.'); return; }
     setAuthLoading(true);
     setAuthError(null);
-
     try {
       const response = await fetch(`${baseUrl}/auth/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: userId.trim(), password: password.trim() }),
       });
-
       if (!response.ok) {
         let errMsg = '인증에 실패했습니다. 아이디와 비밀번호를 확인해주세요.';
         try {
@@ -256,17 +365,13 @@ function App() {
         } catch (_) {}
         throw new Error(errMsg);
       }
-
       const data = await response.json();
-      const newToken: string = data.token;
-      const id = userId.trim();
-
-      localStorage.setItem('ssu_stoken', newToken);
-      localStorage.setItem('ssu_userid', id);
-      setToken(newToken);
+      localStorage.setItem('ssu_stoken', data.token);
+      localStorage.setItem('ssu_userid', userId.trim());
+      setToken(data.token);
       setShowLoginModal(false);
       setPassword('');
-      fetchChapelData(newToken, year, semester);
+      fetchChapelData(data.token, year, semester);
     } catch (err: any) {
       setAuthError(err.message || '알 수 없는 오류가 발생했습니다.');
     } finally {
@@ -275,7 +380,6 @@ function App() {
   };
 
   const handleLogout = () => {
-    // KV 캐시 무효화 (실패해도 로컬 로그아웃은 진행)
     const storedId = localStorage.getItem('ssu_userid');
     if (storedId) {
       fetch(`${baseUrl}/auth/logout`, {
@@ -293,16 +397,7 @@ function App() {
     setError(null);
   };
 
-  const openLoginModal = () => {
-    setAuthError(null);
-    setShowLoginModal(true);
-  };
-
-  useEffect(() => {
-    if (token) {
-      fetchChapelData(token, year, semester);
-    }
-  }, []);
+  useEffect(() => { if (token) fetchChapelData(token, year, semester); }, []);
 
   const getStatusColor = (attendance: string) => {
     if (attendance === '출석') return 'status-present';
@@ -316,14 +411,9 @@ function App() {
       <div className="results-container glass-panel">
         <div className="header-action">
           <h1 className="title" style={{ margin: 0 }}>숭실대학교 채플 정보</h1>
-          {token && (
-            <button className="btn-icon" onClick={handleLogout}>
-              로그아웃
-            </button>
-          )}
+          {token && <button className="btn-icon" onClick={handleLogout}>로그아웃</button>}
         </div>
 
-        {/* 나의 채플 정보 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', marginTop: '0.25rem' }}>
           <h3 className="section-title" style={{ margin: 0 }}>나의 채플 정보</h3>
           {token && (
@@ -336,22 +426,23 @@ function App() {
         {error && <div className="alert-error">{error}</div>}
 
         {chapelData ? (() => {
-          const totalSessions = chapelData.attendances.length;
-          const attendedCount = chapelData.attendances.filter(a => a.attendance === '출석').length;
-          const absentCount = chapelData.general_information.absence_time;
+          const totalSessions    = chapelData.attendances.length;
+          const attendedCount    = chapelData.attendances.filter(a => a.attendance === '출석').length;
+          const absentCount      = chapelData.general_information.absence_time;
           const requiredAttendance = Math.ceil(totalSessions * 0.8);
-          const remainingAbsences = (totalSessions - requiredAttendance) - absentCount;
+          const remainingAbsences  = (totalSessions - requiredAttendance) - absentCount;
           const isOfficiallyPassed = chapelData.general_information.result === 'P';
-
           return (
             <>
               <div className="dashboard-grid">
                 <div className="stat-card">
                   <span className="stat-label">채플 시간</span>
                   <span className="stat-value">{chapelData.general_information.chapel_time.split('(')[0].trim()}</span>
-                  <span className="stat-subtitle">{chapelData.general_information.chapel_time.includes('(') ? chapelData.general_information.chapel_time.split('(')[1].replace(')', '') : ''}</span>
+                  <span className="stat-subtitle">
+                    {chapelData.general_information.chapel_time.includes('(')
+                      ? chapelData.general_information.chapel_time.split('(')[1].replace(')', '') : ''}
+                  </span>
                 </div>
-
                 <div className="stat-card">
                   <span className="stat-label">출결 현황</span>
                   <span className="stat-value">
@@ -361,16 +452,11 @@ function App() {
                   <span className="stat-subtitle" style={{
                     color: isOfficiallyPassed ? 'var(--success-color)'
                       : remainingAbsences > 0 ? 'var(--success-color)'
-                      : remainingAbsences === 0 ? '#d97706'
-                      : 'var(--error-color)'
+                      : remainingAbsences === 0 ? '#d97706' : 'var(--error-color)'
                   }}>
-                    {isOfficiallyPassed
-                      ? '통과 기준 충족'
-                      : remainingAbsences === 0
-                      ? '결석 한도 도달'
-                      : remainingAbsences < 0
-                      ? `한도 ${Math.abs(remainingAbsences)}회 초과`
-                      : ''}
+                    {isOfficiallyPassed ? '통과 기준 충족'
+                      : remainingAbsences === 0 ? '결석 한도 도달'
+                      : remainingAbsences < 0 ? `한도 ${Math.abs(remainingAbsences)}회 초과` : ''}
                   </span>
                 </div>
               </div>
@@ -385,29 +471,27 @@ function App() {
         })() : (
           loading ? (
             <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              <div className="spinner" style={{ margin: '0 auto 0.75rem', borderColor: '#e5e7eb', borderTopColor: 'var(--primary)' }}></div>
+              <div className="spinner" style={{ margin: '0 auto 0.75rem', borderColor: '#e5e7eb', borderTopColor: 'var(--primary)' }} />
               채플 정보를 불러오는 중...
             </div>
-          ) : (
-            !token && (
+          ) : !token && (
+            <>
               <div className="login-prompt-card">
                 <div className="login-prompt-icon">🔒</div>
                 <p className="login-prompt-text">로그인하여 내 채플 정보를 확인하세요</p>
                 <p className="login-prompt-sub">좌석 배치, 출결 현황 등 개인 채플 정보를 조회할 수 있습니다.</p>
-                <button className="btn-login-prompt" onClick={openLoginModal}>
+                <button className="btn-login-prompt" onClick={() => { setAuthError(null); setShowLoginModal(true); }}>
                   로그인하기
                 </button>
               </div>
-            )
+              <SectionBrowser />
+            </>
           )
         )}
 
-        {/* 좌석 안내도 토글 */}
+        {/* 전체 좌석 안내도 토글 */}
         <div className="seating-image-toggle">
-          <button
-            className="seating-toggle-btn"
-            onClick={() => setShowSeatingImage(prev => !prev)}
-          >
+          <button className="seating-toggle-btn" onClick={() => setShowSeatingImage(p => !p)}>
             <span>한경직기념관 전체 좌석 안내도</span>
             <span className="seating-toggle-indicator">{showSeatingImage ? '▲ 닫기' : '▼ 보기'}</span>
           </button>
@@ -454,59 +538,36 @@ function App() {
       {/* 로그인 모달 */}
       {showLoginModal && (
         <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
-          <div className="modal-panel glass-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-panel glass-panel" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">SSU Chapel 로그인</h2>
               <button className="modal-close" onClick={() => setShowLoginModal(false)}>✕</button>
             </div>
-
             {authError && <div className="alert-error">{authError}</div>}
-
             <form onSubmit={handleLogin}>
               <div className="form-group">
                 <label htmlFor="userId">학번 (SSO 아이디)</label>
-                <input
-                  id="userId"
-                  type="text"
-                  className="input-field"
-                  placeholder="예: 20261234"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  disabled={authLoading}
-                  autoComplete="username"
-                  autoFocus
-                />
+                <input id="userId" type="text" className="input-field" placeholder="예: 20261234"
+                  value={userId} onChange={e => setUserId(e.target.value)}
+                  disabled={authLoading} autoComplete="username" autoFocus />
               </div>
-
               <div className="form-group" style={{ position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                   <label htmlFor="password" style={{ marginBottom: 0 }}>비밀번호</label>
-                  <a
-                    href="https://smartid.ssu.ac.kr/Symtra_Sso/smln_pwd.asp"
-                    target="_blank"
+                  <a href="https://smartid.ssu.ac.kr/Symtra_Sso/smln_pwd.asp" target="_blank"
                     rel="noopener noreferrer"
-                    style={{ fontSize: '0.75rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}
-                  >
+                    style={{ fontSize: '0.75rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>
                     비밀번호 찾기
                   </a>
                 </div>
-                <input
-                  id="password"
-                  type="password"
-                  className="input-field"
-                  placeholder="SSO 비밀번호를 입력하세요"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={authLoading}
-                  autoComplete="current-password"
-                />
+                <input id="password" type="password" className="input-field" placeholder="SSO 비밀번호를 입력하세요"
+                  value={password} onChange={e => setPassword(e.target.value)}
+                  disabled={authLoading} autoComplete="current-password" />
               </div>
-
               <button type="submit" className="btn-primary" disabled={authLoading}>
                 {authLoading ? '로그인 중...' : '로그인'}
               </button>
             </form>
-
             <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#64748b', textAlign: 'center', lineHeight: '1.5' }}>
               * 개인정보는 안전하게 보호되며, 채플 정보를 조회하는 데에만 사용되고 서버에 저장되지 않습니다.
             </p>
