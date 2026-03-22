@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 
 // ── 상수 ──────────────────────────────────────────────
 const FLOOR_2_MAX_ROW = 6; // 2층은 1~6행, 7행부터 3층
@@ -240,16 +240,12 @@ function SectionBrowser() {
         ))}
       </div>
 
-      {viewSection && (
-        <Fragment>
-          <ChapelMiniMap
-            displaySection={viewSection}
-            userSection={null}
-            onSectionClick={handleClick}
-          />
-          <SeatSectionGrid section={viewSection} />
-        </Fragment>
-      )}
+      <ChapelMiniMap
+        displaySection={viewSection}
+        userSection={null}
+        onSectionClick={handleClick}
+      />
+      {viewSection && <SeatSectionGrid section={viewSection} />}
     </div>
   );
 }
