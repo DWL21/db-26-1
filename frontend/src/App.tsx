@@ -134,6 +134,15 @@ function App() {
   };
 
   const handleLogout = () => {
+    // KV 캐시 무효화 (실패해도 로컬 로그아웃은 진행)
+    const storedId = localStorage.getItem('ssu_userid');
+    if (storedId) {
+      fetch(`${baseUrl}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: storedId }),
+      }).catch(() => {});
+    }
     localStorage.removeItem('ssu_stoken');
     localStorage.removeItem('ssu_userid');
     setToken(null);

@@ -30,6 +30,11 @@ struct AuthTokenRequest {
     password: String,
 }
 
+#[derive(Deserialize)]
+struct AuthLogoutRequest {
+    id: String,
+}
+
 #[derive(Serialize)]
 struct AuthTokenResponse {
     token: String,
@@ -335,6 +340,10 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
             let headers = cors_headers()?;
             Ok(Response::empty()?.with_headers(headers))
         })
+        .options("/auth/logout", |_, _| {
+            let headers = cors_headers()?;
+            Ok(Response::empty()?.with_headers(headers))
+        })
         .options("/chapel", |_, _| {
             let headers = cors_headers()?;
             Ok(Response::empty()?.with_headers(headers))
@@ -350,7 +359,7 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
             headers.set("Content-Type", "text/html; charset=utf-8")?;
             Ok(Response::ok(SWAGGER_HTML)?.with_headers(headers))
         })
-        .post_async("/auth/token", |mut req, _ctx| async move {
+        .post_async("/auth/token", |mut req, ctx| async move {
             let body: AuthTokenRequest = match req.json().await {
                 Ok(b) => b,
                 Err(_) => {
@@ -361,7 +370,21 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                 }
             };
 
-            // CantLoadForm은 CF Worker IP 차단/레이트리밋 — 지연 후 재시도
+            let kv_key = format!("token:{}", body.id);
+
+            // KV 캐시 조회 — 히트 시 SSO 호출 없이 즉시 반환
+            if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
+                if let Ok(Some(cached_token)) = kv.get(&kv_key).text().await {
+                    let resp = AuthTokenResponse { token: cached_token };
+                    let json = serde_json::to_string(&resp)
+                        .map_err(|e| Error::RustError(e.to_string()))?;
+                    let headers = cors_headers()?;
+                    headers.set("Content-Type", "application/json")?;
+                    return Ok(Response::ok(json)?.with_headers(headers));
+                }
+            }
+
+            // KV 미스 — SSO 서버 호출 (지연 재시도)
             let retry_delays_ms: [u32; 3] = [0, 500, 1000];
             let mut last_err = String::new();
             for &delay in retry_delays_ms.iter() {
@@ -370,6 +393,12 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                 }
                 match obtain_ssu_sso_token(&body.id, &body.password).await {
                     Ok(token) => {
+                        // KV에 저장 (TTL 23시간) — 실패해도 토큰 반환은 계속
+                        if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
+                            if let Ok(builder) = kv.put(&kv_key, &token) {
+                                let _ = builder.expiration_ttl(82800).execute().await;
+                            }
+                        }
                         let resp = AuthTokenResponse { token };
                         let json = serde_json::to_string(&resp)
                             .map_err(|e| Error::RustError(e.to_string()))?;
@@ -389,6 +418,23 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                 format!(r#"{{"error":"Authentication failed: {}"}}"#, last_err),
                 401,
             )?)
+        })
+        .post_async("/auth/logout", |mut req, ctx| async move {
+            let body: AuthLogoutRequest = match req.json().await {
+                Ok(b) => b,
+                Err(_) => {
+                    return cors_response(Response::error(
+                        r#"{"error":"Invalid request body. Expected JSON with id field."}"#,
+                        400,
+                    )?);
+                }
+            };
+
+            if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
+                let _ = kv.delete(&format!("token:{}", body.id)).await;
+            }
+
+            cors_response(Response::ok("{}")?.with_headers(cors_headers()?))
         })
         .post_async("/chapel", |mut req, _ctx| async move {
             let body: ChapelRequest = match req.json().await {
