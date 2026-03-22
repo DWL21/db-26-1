@@ -342,6 +342,8 @@ function App() {
           setToken(null);
           setAuthError('인증이 만료되었습니다. 다시 로그인해주세요.');
           setShowLoginModal(true);
+          (window as any).clarity?.('event', 'auth_expired');
+          (window as any).gtag?.('event', 'auth_expired');
           return;
         }
         let errMsg = '채플 정보를 불러오는데 실패했습니다.';
@@ -353,8 +355,12 @@ function App() {
         throw new Error(errMsg);
       }
       setChapelData(await response.json());
+      (window as any).clarity?.('event', 'chapel_loaded');
+      (window as any).gtag?.('event', 'chapel_loaded');
     } catch (err: any) {
       setError(err.message || '알 수 없는 오류가 발생했습니다.');
+      (window as any).clarity?.('event', 'chapel_load_error');
+      (window as any).gtag?.('event', 'chapel_load_error');
     } finally {
       setLoading(false);
     }
@@ -386,9 +392,14 @@ function App() {
       setToken(data.token);
       setShowLoginModal(false);
       setPassword('');
+      (window as any).clarity?.('event', 'login_success');
+      (window as any).clarity?.('identify', userId.trim());
+      (window as any).gtag?.('event', 'login');
       fetchChapelData(data.token, year, semester);
     } catch (err: any) {
       setAuthError(err.message || '알 수 없는 오류가 발생했습니다.');
+      (window as any).clarity?.('event', 'login_failed');
+      (window as any).gtag?.('event', 'login_failed');
     } finally {
       setAuthLoading(false);
     }
@@ -408,6 +419,8 @@ function App() {
     setToken(null);
     setChapelData(null);
     setLoading(false);
+    (window as any).clarity?.('event', 'logout');
+    (window as any).gtag?.('event', 'logout');
     setUserId('');
     setPassword('');
     setError(null);
