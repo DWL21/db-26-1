@@ -38,9 +38,17 @@ function App() {
   // Persisted auth (restored from localStorage on mount)
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('ssu_stoken'));
 
+  // 현재 연도까지 동적 생성 (2024~)
+  const currentYear = new Date().getFullYear();
+  const availableYears = Array.from({ length: currentYear - 2023 }, (_, i) => 2024 + i).reverse();
+
+  // 2~8월 → 1학기, 9~1월 → 2학기
+  const currentMonth = new Date().getMonth() + 1;
+  const defaultSemester = currentMonth >= 2 && currentMonth <= 8 ? '1' : '2';
+
   // Chapel data states
-  const [year, setYear] = useState('2026');
-  const [semester, setSemester] = useState('1');
+  const [year, setYear] = useState(String(currentYear));
+  const [semester, setSemester] = useState(defaultSemester);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chapelData, setChapelData] = useState<ChapelResponse | null>(null);
@@ -183,9 +191,9 @@ function App() {
                 onChange={(e) => setYear(e.target.value)}
                 disabled={loading}
               >
-                <option value="2026">2026년</option>
-                <option value="2025">2025년</option>
-                <option value="2024">2024년</option>
+                {availableYears.map((y) => (
+                  <option key={y} value={String(y)}>{y}년</option>
+                ))}
               </select>
             </div>
             <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
@@ -199,8 +207,6 @@ function App() {
               >
                 <option value="1">1학기</option>
                 <option value="2">2학기</option>
-                <option value="summer">여름학기</option>
-                <option value="winter">겨울학기</option>
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>

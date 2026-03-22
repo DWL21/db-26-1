@@ -1,12 +1,28 @@
 use std::sync::Arc;
 
+use js_sys::{Function, Promise, Reflect};
 use rusaint::application::chapel::ChapelApplication;
 use rusaint::client::USaintClientBuilder;
 use rusaint::model::SemesterType;
 use rusaint::obtain_ssu_sso_token;
 use rusaint::USaintSession;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::JsValue;
+use wasm_bindgen_futures::JsFuture;
 use worker::*;
+
+async fn sleep_ms(ms: u32) {
+    let promise = Promise::new(&mut |resolve, _| {
+        let global = js_sys::global();
+        let set_timeout = Reflect::get(&global, &JsValue::from_str("setTimeout")).unwrap();
+        let _ = Function::from(set_timeout).call2(
+            &JsValue::NULL,
+            &resolve,
+            &JsValue::from_f64(ms as f64),
+        );
+    });
+    let _ = JsFuture::from(promise).await;
+}
 
 #[derive(Deserialize)]
 struct AuthTokenRequest {
@@ -345,20 +361,34 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                 }
             };
 
-            match obtain_ssu_sso_token(&body.id, &body.password).await {
-                Ok(token) => {
-                    let resp = AuthTokenResponse { token };
-                    let json = serde_json::to_string(&resp)
-                        .map_err(|e| Error::RustError(e.to_string()))?;
-                    let headers = cors_headers()?;
-                    headers.set("Content-Type", "application/json")?;
-                    Ok(Response::ok(json)?.with_headers(headers))
+            // CantLoadForm은 CF Worker IP 차단/레이트리밋 — 지연 후 재시도
+            let retry_delays_ms: [u32; 3] = [0, 500, 1000];
+            let mut last_err = String::new();
+            for &delay in retry_delays_ms.iter() {
+                if delay > 0 {
+                    sleep_ms(delay).await;
                 }
-                Err(e) => cors_response(Response::error(
-                    format!(r#"{{"error":"Authentication failed: {}"}}"#, e),
-                    401,
-                )?),
+                match obtain_ssu_sso_token(&body.id, &body.password).await {
+                    Ok(token) => {
+                        let resp = AuthTokenResponse { token };
+                        let json = serde_json::to_string(&resp)
+                            .map_err(|e| Error::RustError(e.to_string()))?;
+                        let headers = cors_headers()?;
+                        headers.set("Content-Type", "application/json")?;
+                        return Ok(Response::ok(json)?.with_headers(headers));
+                    }
+                    Err(e) => {
+                        last_err = e.to_string();
+                        if !last_err.contains("load form") {
+                            break;
+                        }
+                    }
+                }
             }
+            cors_response(Response::error(
+                format!(r#"{{"error":"Authentication failed: {}"}}"#, last_err),
+                401,
+            )?)
         })
         .post_async("/chapel", |mut req, _ctx| async move {
             let body: ChapelRequest = match req.json().await {
