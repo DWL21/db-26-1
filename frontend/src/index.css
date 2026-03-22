@@ -597,6 +597,15 @@ body {
   margin-bottom: 0.875rem;
 }
 
+.section-browser-map .inactive-floor .chapel-section-cell {
+  padding: 0.55rem 0;
+  font-size: 0.9rem;
+  color: #93c5fd;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+
 .section-btn-groups {
   display: flex;
   flex-direction: column;

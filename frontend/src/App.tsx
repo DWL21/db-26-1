@@ -219,32 +219,13 @@ function SectionBrowser() {
   return (
     <div className="section-browser-card">
       <div className="section-browser-title">구역 탐색</div>
-      <p className="section-browser-desc">구역을 선택하면 좌석 배치를 확인할 수 있습니다.</p>
-
-      <div className="section-btn-groups">
-        {FLOOR_GROUPS.map(({ key, label, sections }) => (
-          <div key={key} className="section-btn-group">
-            <span className="section-group-label">{label}</span>
-            <div className="section-btn-row">
-              {sections.map(s => (
-                <button
-                  key={s}
-                  className={`section-btn${viewSection === s ? ' active' : ''}`}
-                  onClick={() => handleClick(s)}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="section-browser-map">
+        <ChapelMiniMap
+          displaySection={viewSection}
+          userSection={null}
+          onSectionClick={handleClick}
+        />
       </div>
-
-      <ChapelMiniMap
-        displaySection={viewSection}
-        userSection={null}
-        onSectionClick={handleClick}
-      />
       {viewSection && <SeatSectionGrid section={viewSection} />}
     </div>
   );

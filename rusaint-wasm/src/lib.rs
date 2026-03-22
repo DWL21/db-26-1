@@ -30,11 +30,6 @@ struct AuthTokenRequest {
     password: String,
 }
 
-#[derive(Deserialize)]
-struct AuthLogoutRequest {
-    id: String,
-}
-
 #[derive(Serialize)]
 struct AuthTokenResponse {
     token: String,
@@ -419,21 +414,7 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                 401,
             )?)
         })
-        .post_async("/auth/logout", |mut req, ctx| async move {
-            let body: AuthLogoutRequest = match req.json().await {
-                Ok(b) => b,
-                Err(_) => {
-                    return cors_response(Response::error(
-                        r#"{"error":"Invalid request body. Expected JSON with id field."}"#,
-                        400,
-                    )?);
-                }
-            };
-
-            if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
-                let _ = kv.delete(&format!("token:{}", body.id)).await;
-            }
-
+        .post_async("/auth/logout", |_req, _ctx| async move {
             cors_response(Response::ok("{}")?.with_headers(cors_headers()?))
         })
         .post_async("/chapel", |mut req, _ctx| async move {
