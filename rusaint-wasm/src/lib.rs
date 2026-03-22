@@ -7,9 +7,16 @@ use rusaint::model::SemesterType;
 use rusaint::obtain_ssu_sso_token;
 use rusaint::USaintSession;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use worker::*;
+
+fn hash_password(password: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(password.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
 
 async fn sleep_ms(ms: u32) {
     let promise = Promise::new(&mut |resolve, _| {
@@ -33,6 +40,12 @@ struct AuthTokenRequest {
 #[derive(Serialize)]
 struct AuthTokenResponse {
     token: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedAuth {
+    token: String,
+    password_hash: String,
 }
 
 #[derive(Deserialize)]
@@ -369,17 +382,21 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
 
             // KV 캐시 조회 — 히트 시 SSO 호출 없이 즉시 반환
             if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
-                if let Ok(Some(cached_token)) = kv.get(&kv_key).text().await {
-                    let resp = AuthTokenResponse { token: cached_token };
-                    let json = serde_json::to_string(&resp)
-                        .map_err(|e| Error::RustError(e.to_string()))?;
-                    let headers = cors_headers()?;
-                    headers.set("Content-Type", "application/json")?;
-                    return Ok(Response::ok(json)?.with_headers(headers));
+                if let Ok(Some(cached_json)) = kv.get(&kv_key).text().await {
+                    if let Ok(cached) = serde_json::from_str::<CachedAuth>(&cached_json) {
+                        if cached.password_hash == hash_password(&body.password) {
+                            let resp = AuthTokenResponse { token: cached.token };
+                            let json = serde_json::to_string(&resp)
+                                .map_err(|e| Error::RustError(e.to_string()))?;
+                            let headers = cors_headers()?;
+                            headers.set("Content-Type", "application/json")?;
+                            return Ok(Response::ok(json)?.with_headers(headers));
+                        }
+                    }
                 }
             }
 
-            // KV 미스 — SSO 서버 호출 (지연 재시도)
+            // KV 미스 또는 비밀번호 불일치 — SSO 서버 호출 (지연 재시도)
             let retry_delays_ms: [u32; 2] = [0, 200];
             let mut last_err = String::new();
             for &delay in retry_delays_ms.iter() {
@@ -390,8 +407,14 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                     Ok(token) => {
                         // KV에 저장 (TTL 23시간) — 실패해도 토큰 반환은 계속
                         if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
-                            if let Ok(builder) = kv.put(&kv_key, &token) {
-                                let _ = builder.expiration_ttl(82800).execute().await;
+                            let cached = CachedAuth {
+                                token: token.clone(),
+                                password_hash: hash_password(&body.password),
+                            };
+                            if let Ok(json) = serde_json::to_string(&cached) {
+                                if let Ok(builder) = kv.put(&kv_key, &json) {
+                                    let _ = builder.expiration_ttl(82800).execute().await;
+                                }
                             }
                         }
                         let resp = AuthTokenResponse { token };

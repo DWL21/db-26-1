@@ -15,6 +15,7 @@ js-sys = "0.3"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 rusaint = { path = "../rusaint/packages/rusaint", default-features = false, features = ["application"] }
+sha2 = { version = "0.10", default-features = false }
 
 [profile.release]
 lto = true
