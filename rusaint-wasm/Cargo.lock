@@ -1687,7 +1687,6 @@ dependencies = [
  "rustls-pki-types",
  "rustls-platform-verifier",
  "serde",
- "serde_json",
  "serde_urlencoded",
  "sync_wrapper",
  "tokio",
@@ -2837,6 +2836,8 @@ dependencies = [
 [[package]]
 name = "wdpe-macros"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61e5f78373bda05553bbc85f811e73a9b535d004ff975c581329ed5128e5ad17"
 dependencies = [
  "proc-macro2",
  "quote",

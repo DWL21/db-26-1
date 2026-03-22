@@ -17,6 +17,9 @@ wasm-bindgen-futures = "0.4"
 rusaint = { path = "../rusaint/packages/rusaint", default-features = false, features = ["application"] }
 sha2 = { version = "0.10", default-features = false }
 
+[patch.crates-io]
+wdpe = { path = "../rusaint/packages/wdpe-patched" }
+
 [profile.release]
 lto = true
 strip = true
