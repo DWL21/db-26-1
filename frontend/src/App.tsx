@@ -1,5 +1,90 @@
 import { useState, useEffect } from 'react';
 
+// "G - 8 - 2" 형식 파싱 (구역 - 행 - 열)
+function parseSeat(seatStr: string): { section: string | null; row: string | null; col: string | null } {
+  const m3 = seatStr.match(/^([A-Za-z]+)\s*-\s*(\d+)\s*-\s*(\d+)$/);
+  if (m3) return { section: m3[1].toUpperCase(), row: m3[2], col: m3[3] };
+  const m2 = seatStr.match(/^([A-Za-z]+)\s*-?\s*(\d+)$/);
+  if (m2) return { section: m2[1].toUpperCase(), row: null, col: m2[2] };
+  return { section: null, row: null, col: seatStr };
+}
+
+interface SeatViewerProps {
+  seatNumber: string;
+  floorLevel: number;
+  chapelRoom: string;
+}
+
+function SeatViewer({ seatNumber, floorLevel, chapelRoom }: SeatViewerProps) {
+  const { section, row, col } = parseSeat(seatNumber);
+  const sectionIndex = section ? section.charCodeAt(0) - 65 : -1;
+  const gridEnd = Math.max(7, sectionIndex + 2);
+  const allSections = Array.from({ length: Math.min(gridEnd + 1, 12) }, (_, i) =>
+    String.fromCharCode(65 + i)
+  );
+  const sectionRows: string[][] = [];
+  for (let i = 0; i < allSections.length; i += 4) {
+    sectionRows.push(allSections.slice(i, i + 4));
+  }
+
+  return (
+    <div className="seat-viewer-card">
+      <div className="seat-viewer-title">나의 지정 좌석</div>
+      <div className="seat-info-row">
+        {section && (
+          <>
+            <div className="seat-section-box">
+              <div className="seat-big-value">{section}</div>
+              <div className="seat-meta-label">구역</div>
+            </div>
+            <div className="seat-divider-vertical" />
+          </>
+        )}
+        {row && (
+          <>
+            <div className="seat-number-box">
+              <div className="seat-big-value">{row}</div>
+              <div className="seat-meta-label">행</div>
+            </div>
+            <div className="seat-divider-vertical" />
+          </>
+        )}
+        <div className="seat-number-box" style={{ background: '#0369a1' }}>
+          <div className="seat-big-value">{col ?? '-'}</div>
+          <div className="seat-meta-label">열</div>
+        </div>
+        <div className="seat-location-box">
+          <div className="seat-floor-pill">{floorLevel}층</div>
+          <div className="seat-room-text">{chapelRoom}</div>
+        </div>
+      </div>
+
+      {section && (
+        <div className="chapel-mini-map">
+          <div className="chapel-mini-label">강의실 위치 안내</div>
+          <div className="chapel-stage-bar">무 대</div>
+          <div className="chapel-mini-grid">
+            {sectionRows.map((r, ri) => (
+              <div key={ri} className="chapel-mini-row">
+                {r.map(s => (
+                  <div key={s} className={`chapel-mini-cell${s === section ? ' active' : ''}`}>
+                    {s}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="chapel-mini-footer">
+            <span className="you-badge">
+              내 자리: {section}구역{row ? ` ${row}행` : ''}{col ? ` ${col}열` : ''}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface ChapelResponse {
   year: number;
   semester: string;
@@ -47,6 +132,7 @@ function App() {
   const [year] = useState(currentYear);
   const [semester] = useState(currentSemester);
   const [loading, setLoading] = useState(false);
+  const [showSeatingImage, setShowSeatingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chapelData, setChapelData] = useState<ChapelResponse | null>(null);
 
@@ -212,12 +298,6 @@ function App() {
                 </div>
 
                 <div className="stat-card">
-                  <span className="stat-label">지정 좌석</span>
-                  <span className="stat-value" style={{ color: '#a855f7' }}>{chapelData.general_information.seat_number}</span>
-                  <span className="stat-subtitle">{chapelData.general_information.chapel_room} ({chapelData.general_information.floor_level}층)</span>
-                </div>
-
-                <div className="stat-card">
                   <span className="stat-label">출결 현황</span>
                   <span className="stat-value">
                     {attendedCount}
@@ -239,6 +319,12 @@ function App() {
                   </span>
                 </div>
               </div>
+
+              <SeatViewer
+                seatNumber={chapelData.general_information.seat_number}
+                floorLevel={chapelData.general_information.floor_level}
+                chapelRoom={chapelData.general_information.chapel_room}
+              />
             </>
           );
         })() : (
@@ -261,14 +347,22 @@ function App() {
           )
         )}
 
-        {/* 좌석 안내도 */}
-        <div className="seating-chart-container">
-          <div className="seating-chart-title">한경직기념관 좌석안내도</div>
-          <img
-            src="https://chaplain.ssu.ac.kr/wp-content/uploads/sites/7/2018/05/ssu01_02_05_plan.jpg"
-            alt="한경직기념관 좌석 구조"
-            className="seating-chart-img"
-          />
+        {/* 좌석 안내도 토글 */}
+        <div className="seating-image-toggle">
+          <button
+            className="seating-toggle-btn"
+            onClick={() => setShowSeatingImage(prev => !prev)}
+          >
+            <span>한경직기념관 전체 좌석 안내도</span>
+            <span className="seating-toggle-indicator">{showSeatingImage ? '▲ 닫기' : '▼ 보기'}</span>
+          </button>
+          {showSeatingImage && (
+            <img
+              src="https://chaplain.ssu.ac.kr/wp-content/uploads/sites/7/2018/05/ssu01_02_05_plan.jpg"
+              alt="한경직기념관 좌석 구조"
+              className="seating-chart-img"
+            />
+          )}
         </div>
 
         {/* 출결 기록 */}
