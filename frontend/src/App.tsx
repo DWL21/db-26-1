@@ -3,9 +3,19 @@ import PrivacyPolicyModal from './PrivacyPolicyModal';
 
 // ── 상수 ──────────────────────────────────────────────
 const FLOOR_2_MAX_ROW = 6; // 2층은 1~6행, 7행부터 3층
-const SECTION_MAX_COLS: Record<string, number> = {
-  A: 6,  B: 7,  C: 11, D: 7,  E: 6,
-  F: 9,  G: 7,  H: 9,  I: 6,  J: 7,
+
+// 구역별 행별 실제 좌석 수 (index 0 = 1행). -1 = 장애인석 행
+const SECTION_ROW_COLS: Record<string, number[]> = {
+  A: [5, 6, 7, 8, 8, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 5],
+  B: [6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3],
+  C: [9, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11],
+  D: [6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, -1],
+  E: [5, 6, 7, 8, 8, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 5],
+  F: [8, 8, 8, 8, 8, 8, 3, 3, 3, 3, 8, 8, 8, 6, 5],
+  G: [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6, 6],
+  H: [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
+  I: [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+  J: [8, 8, 8, 8, 8, 8, 3, 3, 3, 3, 8, 8, 8, 6, 5],
 };
 const SECTIONS_1F  = ['A', 'B', 'C', 'D', 'E'];
 const SECTIONS_23F = ['F', 'G', 'H', 'I', 'J'];
@@ -78,9 +88,10 @@ function SeatSectionGrid({
   userRow?: number;
   userCol?: number;
 }) {
-  const maxCol    = SECTION_MAX_COLS[section] ?? 8;
+  const rowCols   = SECTION_ROW_COLS[section] ?? [];
   const is23F     = SECTIONS_23F.includes(section);
-  const totalRows = Math.max(userRow ? userRow + 2 : 0, is23F ? 11 : 12);
+  const maxCol    = Math.max(...rowCols.filter(c => c > 0), 1);
+  const totalRows = rowCols.length;
 
   const rows: React.ReactNode[] = [];
   for (let r = 1; r <= totalRows; r++) {
@@ -92,13 +103,27 @@ function SeatSectionGrid({
         </div>
       );
     }
+    const colsInRow = rowCols[r - 1];
     const isMineRow = r === userRow;
+
+    if (colsInRow === -1) {
+      rows.push(
+        <div key={r} className="seat-grid-row">
+          <div className={`seat-row-label${isMineRow ? ' my-row' : ''}`}>{r}</div>
+          <div className="seat-wheelchair-row">♿ 장애인석</div>
+        </div>
+      );
+      continue;
+    }
+
     rows.push(
       <div key={r} className="seat-grid-row">
         <div className={`seat-row-label${isMineRow ? ' my-row' : ''}`}>{r}</div>
         {Array.from({ length: maxCol }, (_, ci) => {
           const c = ci + 1;
+          const exists = c <= colsInRow;
           const isMine = isMineRow && c === userCol;
+          if (!exists) return <div key={c} className="seat-cell seat-cell-void" />;
           return (
             <div key={c} className={`seat-cell${isMine ? ' my-seat' : ''}`}>
               {isMine ? '★' : ''}
