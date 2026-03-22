@@ -173,64 +173,73 @@ function SeatViewer({ seatNumber }: SeatViewerProps) {
     setViewSection(prev => (prev === s || s === section) && !prev ? null : s === section ? null : s);
   };
 
+  const isUnassigned = !section;
+
   return (
     <div className="seat-viewer-card">
       <div className="seat-viewer-title">나의 지정 좌석</div>
-      <div className="seat-info-row">
-        {section && (
-          <>
+
+      {isUnassigned ? (
+        <div style={{ textAlign: 'center', padding: '1rem 0 0.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>🪑</div>
+          <div style={{ fontWeight: 600, color: '#64748b' }}>미지정</div>
+          <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>이번 학기 좌석이 배정되지 않았습니다.</div>
+        </div>
+      ) : (
+        <>
+          <div className="seat-info-row">
             <div className="seat-section-box">
               <div className="seat-big-value">{section}</div>
               <div className="seat-meta-label">구역</div>
             </div>
             <div className="seat-divider-vertical" />
-          </>
-        )}
-        {row && (
-          <>
-            <div className="seat-number-box">
-              <div className="seat-big-value">{row}</div>
-              <div className="seat-meta-label">행</div>
+            {row && (
+              <>
+                <div className="seat-number-box">
+                  <div className="seat-big-value">{row}</div>
+                  <div className="seat-meta-label">행</div>
+                </div>
+                <div className="seat-divider-vertical" />
+              </>
+            )}
+            <div className="seat-number-box" style={{ background: '#0369a1' }}>
+              <div className="seat-big-value">{col ?? '-'}</div>
+              <div className="seat-meta-label">열</div>
             </div>
-            <div className="seat-divider-vertical" />
-          </>
-        )}
-        <div className="seat-number-box" style={{ background: '#0369a1' }}>
-          <div className="seat-big-value">{col ?? '-'}</div>
-          <div className="seat-meta-label">열</div>
-        </div>
-      </div>
+          </div>
 
-      <div className="chapel-mini-map">
-        <div className="chapel-mini-label-row">
-          <span className="chapel-mini-label">강의실 위치 안내</span>
-          {viewSection && viewSection !== section && (
-            <button className="view-reset-btn" onClick={() => setViewSection(null)}>
-              내 자리로
-            </button>
-          )}
-        </div>
+          <div className="chapel-mini-map">
+            <div className="chapel-mini-label-row">
+              <span className="chapel-mini-label">강의실 위치 안내</span>
+              {viewSection && viewSection !== section && (
+                <button className="view-reset-btn" onClick={() => setViewSection(null)}>
+                  내 자리로
+                </button>
+              )}
+            </div>
 
-        <ChapelMiniMap
-          displaySection={displaySection}
-          userSection={section}
-          onSectionClick={handleSectionClick}
-        />
+            <ChapelMiniMap
+              displaySection={displaySection}
+              userSection={section}
+              onSectionClick={handleSectionClick}
+            />
 
-        {displaySection && (
-          <SeatSectionGrid
-            section={displaySection}
-            userRow={isViewingOwn ? userRow : undefined}
-            userCol={isViewingOwn ? userCol : undefined}
-          />
-        )}
+            {displaySection && (
+              <SeatSectionGrid
+                section={displaySection}
+                userRow={isViewingOwn ? userRow : undefined}
+                userCol={isViewingOwn ? userCol : undefined}
+              />
+            )}
 
-        <div className="chapel-mini-footer">
-          <span className="you-badge">
-            내 자리: {section ?? '?'}구역{row ? ` ${row}행` : ''}{col ? ` ${col}열` : ''}
-          </span>
-        </div>
-      </div>
+            <div className="chapel-mini-footer">
+              <span className="you-badge">
+                내 자리: {section}구역{row ? ` ${row}행` : ''}{col ? ` ${col}열` : ''}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
