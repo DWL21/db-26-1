@@ -211,8 +211,8 @@ function App() {
                 <div className="stat-card">
                   <span className="stat-label">출결 현황</span>
                   <span className="stat-value">
-                    출석 {attendedCount}
-                    <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--text-secondary)' }}> / {totalSessions}회</span>
+                    {attendedCount}
+                    <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--text-secondary)' }}> / {requiredAttendance}회 필요</span>
                   </span>
                   <span className="stat-subtitle" style={{
                     color: isOfficiallyPassed ? 'var(--success-color)'
@@ -221,12 +221,12 @@ function App() {
                       : 'var(--error-color)'
                   }}>
                     {isOfficiallyPassed
-                      ? '합격'
-                      : remainingAbsences > 0
-                      ? `결석 ${remainingAbsences}회 더 가능`
+                      ? '통과 기준 충족'
                       : remainingAbsences === 0
                       ? '결석 한도 도달'
-                      : `한도 ${Math.abs(remainingAbsences)}회 초과`}
+                      : remainingAbsences < 0
+                      ? `한도 ${Math.abs(remainingAbsences)}회 초과`
+                      : ''}
                   </span>
                 </div>
               </div>
