@@ -437,7 +437,15 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                 401,
             )?)
         })
-        .post_async("/auth/logout", |_req, _ctx| async move {
+        .post_async("/auth/logout", |mut req, ctx| async move {
+            #[derive(Deserialize)]
+            struct LogoutRequest { id: String }
+            if let Ok(body) = req.json::<LogoutRequest>().await {
+                if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
+                    let kv_key = format!("token:{}", body.id);
+                    let _ = kv.delete(&kv_key).await;
+                }
+            }
             cors_response(Response::ok("{}")?.with_headers(cors_headers()?))
         })
         .post_async("/chapel", |mut req, _ctx| async move {
