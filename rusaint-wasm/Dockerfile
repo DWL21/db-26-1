@@ -23,7 +23,8 @@ FROM node:20-bookworm-slim AS runtime
 
 WORKDIR /app
 
-# workerd npm 패키지 (바이너리 포함)
+# TLS CA 인증서 및 workerd npm 패키지
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN npm install workerd
 
 # 빌드된 WASM 복사

@@ -24,6 +24,10 @@ using Workerd = import "/workerd/workerd.capnp";
 const config :Workerd.Config = (
   services = [
     (name = "main", worker = .chapelWorker),
+    (name = "internet", network = (
+      allow = ["public", "private"],
+      tlsOptions = (trustBrowserCas = true),
+    )),
   ],
   sockets = [
     (name = "http", address = "*:8787", http = (), service = "main"),
@@ -40,6 +44,7 @@ const chapelWorker :Workerd.Worker = (
     (name = "WEBDIS_URL", text = "${WEBDIS_URL}"),
   ],
   compatibilityDate = "2024-11-01",
+  globalOutbound = "internet",
 );
 CAPNP
 
