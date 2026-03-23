@@ -1,4 +1,8 @@
 FROM nginx:stable-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN mkdir -p /etc/nginx/available
+COPY conf.d/http.conf  /etc/nginx/available/http.conf
+COPY conf.d/https.conf /etc/nginx/available/https.conf
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 EXPOSE 80 443
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/entrypoint.sh"]
