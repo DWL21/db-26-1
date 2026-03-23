@@ -5,7 +5,8 @@ DOMAIN="api.ssu-chapel.kro.kr"
 EMAIL="${1:?사용법: $0 <이메일>}"
 
 echo "=== 1단계: nginx 및 의존 서비스 시작 (HTTP 모드) ==="
-docker compose up -d redis webdis worker nginx
+docker compose up -d redis webdis worker
+docker compose up -d --build nginx
 sleep 5
 
 echo "=== 2단계: Let's Encrypt 인증서 발급 ==="
