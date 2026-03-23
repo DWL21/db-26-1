@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UTM + QR 생성기 — ssu-chapel</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container { width: 100%; max-width: 640px; }
+
+    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; color: #0f172a; }
+
+    .tab-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 0.55rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      color: #64748b;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .tab.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    .field { margin-bottom: 0.875rem; }
+
+    label { display: block; font-size: 0.8rem; font-weight: 500; color: #475569; margin-bottom: 0.3rem; }
+    .required::after { content: ' *'; color: #ef4444; }
+
+    input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      color: #1e293b;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: #6366f1; background: #fff; }
+
+    .hint { font-size: 0.72rem; color: #94a3b8; margin-top: 0.25rem; }
+
+    .presets { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
+
+    .preset-btn {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.6rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      background: #f1f5f9;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .preset-btn:hover { background: #6366f1; color: #fff; border-color: #6366f1; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 0.75rem;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 0.5rem;
+    }
+
+    .btn-primary:hover { background: #4f46e5; }
+
+    #result { display: none; }
+
+    .url-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-size: 0.78rem;
+      color: #334155;
+      word-break: break-all;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+      font-family: monospace;
+    }
+
+    .qr-wrap { display: flex; justify-content: center; padding: 1rem 0; }
+
+    .btn-row { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 0.55rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-secondary:hover { background: #e2e8f0; color: #1e293b; }
+    .copied { color: #16a34a !important; border-color: #16a34a !important; }
+
+    /* 저장 목록 */
+    .list-empty {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      padding: 2rem 0;
+    }
+
+    .utm-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .utm-item:hover { border-color: #6366f1; }
+
+    .utm-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.5rem;
+    }
+
+    .utm-item-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    .tag {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    .tag-source { background: #ede9fe; color: #7c3aed; }
+    .tag-campaign { background: #dbeafe; color: #1d4ed8; }
+    .tag-content { background: #dcfce7; color: #15803d; }
+
+    .utm-item-url {
+      font-size: 0.72rem;
+      color: #64748b;
+      word-break: break-all;
+      font-family: monospace;
+      margin-top: 0.4rem;
+    }
+
+    .utm-item-date { font-size: 0.7rem; color: #94a3b8; white-space: nowrap; }
+
+    .btn-delete {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fff;
+      color: #ef4444;
+      cursor: pointer;
+    }
+
+    .btn-delete:hover { background: #fef2f2; }
+
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .btn-clear-all {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fff;
+      color: #ef4444;
+      cursor: pointer;
+    }
+
+    .btn-clear-all:hover { background: #fef2f2; }
+
+    /* 상세 모달 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .modal-title { font-size: 1rem; font-weight: 600; }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #94a3b8;
+      cursor: pointer;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>UTM + QR 생성기</h1>
+
+    <div class="tab-row">
+      <button class="tab active" onclick="switchTab('generate')">생성</button>
+      <button class="tab" onclick="switchTab('list')">저장 목록</button>
+    </div>
+
+    <!-- 생성 탭 -->
+    <div id="page-generate" class="page active">
+      <div class="card">
+        <div class="card-title">기본 URL</div>
+        <div class="field">
+          <label class="required">Base URL</label>
+          <input id="base-url" type="url" value="https://ssu-chapel.pages.dev/" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">UTM 파라미터</div>
+
+        <div class="field">
+          <label class="required">utm_source <span style="font-weight:400;color:#94a3b8">— 트래픽 출처</span></label>
+          <input id="utm-source" type="text" placeholder="예: qr, kakao, instagram" />
+          <div class="presets">
+            <button class="preset-btn" onclick="set('utm-source','qr')">qr</button>
+            <button class="preset-btn" onclick="set('utm-source','kakao')">kakao</button>
+            <button class="preset-btn" onclick="set('utm-source','instagram')">instagram</button>
+            <button class="preset-btn" onclick="set('utm-source','everytime')">everytime</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="required">utm_campaign <span style="font-weight:400;color:#94a3b8">— 캠페인명</span></label>
+          <input id="utm-campaign" type="text" placeholder="예: 2026_spring, chapel_launch" />
+          <div class="presets">
+            <button class="preset-btn" onclick="set('utm-campaign','chapel_poc')">chapel_poc</button>
+            <button class="preset-btn" onclick="set('utm-campaign','chapel_lunch')">chapel_lunch</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>utm_content <span style="font-weight:400;color:#94a3b8">— A/B 구분 (선택)</span></label>
+          <input id="utm-content" type="text" placeholder="비워두면 생성 시각으로 자동 설정" />
+          <div class="hint" id="content-hint"></div>
+        </div>
+
+        <button class="btn-primary" onclick="generate()">QR 생성 및 저장</button>
+      </div>
+
+      <div class="card" id="result">
+        <div class="card-title">생성된 URL</div>
+        <div class="url-box" id="output-url"></div>
+
+        <div class="card-title" style="margin-top:1rem">QR 코드</div>
+        <div class="qr-wrap">
+          <div id="qr-canvas"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-secondary" id="btn-copy" onclick="copyUrl()">URL 복사</button>
+          <button class="btn-secondary" onclick="downloadQR()">QR 다운로드</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 저장 목록 탭 -->
+    <div id="page-list" class="page">
+      <div class="card">
+        <div class="list-header">
+          <div class="card-title" style="margin-bottom:0">저장된 UTM</div>
+          <button class="btn-clear-all" onclick="clearAll()">전체 삭제</button>
+        </div>
+        <div id="utm-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 상세 모달 -->
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">UTM 상세</div>
+        <button class="btn-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="url-box" id="modal-url" style="margin-bottom:1rem"></div>
+      <div class="qr-wrap"><div id="modal-qr"></div></div>
+      <div class="btn-row" style="margin-top:0.75rem">
+        <button class="btn-secondary" id="modal-copy" onclick="copyModal()">URL 복사</button>
+        <button class="btn-secondary" onclick="downloadModalQR()">QR 다운로드</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'ssu_chapel_utms';
+
+    function nowStamp() {
+      const d = new Date();
+      const yy = String(d.getFullYear()).slice(2);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${yy}${mm}${dd}${hh}${mi}${ss}`;
+    }
+
+    // content hint 업데이트
+    document.getElementById('utm-content').addEventListener('input', () => {
+      const val = document.getElementById('utm-content').value.trim();
+      document.getElementById('content-hint').textContent =
+        val ? '' : `비워두면 "${nowStamp()}" 으로 설정됩니다`;
+    });
+    document.getElementById('content-hint').textContent = `비워두면 "${nowStamp()}" 으로 설정됩니다`;
+
+    function set(id, val) { document.getElementById(id).value = val; }
+
+    function load() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    function save(list) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+    function buildUrl(base, source, campaign, content) {
+      const url = new URL(base);
+      url.searchParams.set('utm_source', source);
+      url.searchParams.set('utm_campaign', campaign);
+      url.searchParams.set('utm_content', content);
+      return url.toString();
+    }
+
+    function renderQRWithUrl(containerId, url, size) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      new QRCode(container, {
+        text: url,
+        width: size, height: size,
+        colorDark: '#0f172a', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+    }
+
+    function generate() {
+      const base     = document.getElementById('base-url').value.trim();
+      const source   = document.getElementById('utm-source').value.trim();
+      const campaign = document.getElementById('utm-campaign').value.trim();
+      const content  = document.getElementById('utm-content').value.trim() || nowStamp();
+
+      if (!base || !source || !campaign) {
+        alert('Base URL, utm_source, utm_campaign 은 필수입니다.');
+        return;
+      }
+
+      const finalUrl = buildUrl(base, source, campaign, content);
+      const entry = {
+        id: Date.now(),
+        base, source, campaign, content,
+        url: finalUrl,
+        createdAt: new Date().toISOString(),
+      };
+
+      const list = load();
+      list.unshift(entry);
+      save(list);
+
+      document.getElementById('output-url').textContent = finalUrl;
+      renderQRWithUrl('qr-canvas', finalUrl, 240);
+
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function copyUrl() {
+      navigator.clipboard.writeText(document.getElementById('output-url').textContent).then(() => {
+        const btn = document.getElementById('btn-copy');
+        btn.textContent = '복사됨 ✓'; btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'URL 복사'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    function downloadQR() {
+      const canvas = document.querySelector('#qr-canvas canvas');
+      const source = document.getElementById('utm-source').value.trim();
+      const campaign = document.getElementById('utm-campaign').value.trim();
+      const a = document.createElement('a');
+      a.download = `qr_${source}_${campaign}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+
+    // 목록 렌더링
+    function renderList() {
+      const list = load();
+      const el = document.getElementById('utm-list');
+      if (!list.length) {
+        el.innerHTML = '<div class="list-empty">저장된 UTM이 없습니다.</div>';
+        return;
+      }
+      el.innerHTML = list.map(item => `
+        <div class="utm-item" onclick="openModal(${item.id})">
+          <div class="utm-item-header">
+            <div class="utm-item-tags">
+              <span class="tag tag-source">${item.source}</span>
+              <span class="tag tag-campaign">${item.campaign}</span>
+              <span class="tag tag-content">${item.content}</span>
+            </div>
+            <div style="display:flex;gap:0.4rem;align-items:center">
+              <span class="utm-item-date">${formatDate(item.createdAt)}</span>
+              <button class="btn-delete" onclick="deleteItem(event,${item.id})">삭제</button>
+            </div>
+          </div>
+          <div class="utm-item-url">${item.url}</div>
+        </div>
+      `).join('');
+    }
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    function deleteItem(e, id) {
+      e.stopPropagation();
+      if (!confirm('삭제하시겠습니까?')) return;
+      save(load().filter(i => i.id !== id));
+      renderList();
+    }
+
+    function clearAll() {
+      if (!confirm('전체 삭제하시겠습니까?')) return;
+      save([]);
+      renderList();
+    }
+
+    // 모달
+    let modalEntry = null;
+
+    function openModal(id) {
+      modalEntry = load().find(i => i.id === id);
+      if (!modalEntry) return;
+      document.getElementById('modal-url').textContent = modalEntry.url;
+      renderQRWithUrl('modal-qr', modalEntry.url, 200);
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal(e) {
+      if (e && e.target !== document.getElementById('modal')) return;
+      document.getElementById('modal').classList.remove('open');
+    }
+
+    function copyModal() {
+      if (!modalEntry) return;
+      navigator.clipboard.writeText(modalEntry.url).then(() => {
+        const btn = document.getElementById('modal-copy');
+        btn.textContent = '복사됨 ✓'; btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'URL 복사'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    function downloadModalQR() {
+      const canvas = document.querySelector('#modal-qr canvas');
+      const a = document.createElement('a');
+      a.download = `qr_${modalEntry.source}_${modalEntry.campaign}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ['generate','list'][i] === tab));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(`page-${tab}`).classList.add('active');
+      if (tab === 'list') renderList();
+    }
+  </script>
+</body>
+</html>
