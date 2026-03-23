@@ -404,8 +404,21 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
             let kv_key = format!("token:{}", body.id);
             let webdis_url = ctx.var("WEBDIS_URL").map(|v| v.to_string()).unwrap_or_default();
 
-            // KV 캐시 조회 (Cloudflare) — 히트 시 SSO 호출 없이 즉시 반환
-            if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
+            // WEBDIS_URL이 설정된 경우 Redis 우선, 없으면 Cloudflare KV 사용
+            if !webdis_url.is_empty() {
+                if let Some(cached_json) = webdis_get(&webdis_url, &kv_key).await {
+                    if let Ok(cached) = serde_json::from_str::<CachedAuth>(&cached_json) {
+                        if cached.password_hash == hash_password(&body.password) {
+                            let resp = AuthTokenResponse { token: cached.token };
+                            let json = serde_json::to_string(&resp)
+                                .map_err(|e| Error::RustError(e.to_string()))?;
+                            let headers = cors_headers()?;
+                            headers.set("Content-Type", "application/json")?;
+                            return Ok(Response::ok(json)?.with_headers(headers));
+                        }
+                    }
+                }
+            } else if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
                 if let Ok(Some(cached_json)) = kv.get(&kv_key).text().await {
                     if let Ok(cached) = serde_json::from_str::<CachedAuth>(&cached_json) {
                         if cached.password_hash == hash_password(&body.password) {
@@ -418,18 +431,6 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                         }
                     }
                 }
-            } else if let Some(cached_json) = webdis_get(&webdis_url, &kv_key).await {
-                // Redis 캐시 조회 (로컬 Docker 폴백)
-                if let Ok(cached) = serde_json::from_str::<CachedAuth>(&cached_json) {
-                    if cached.password_hash == hash_password(&body.password) {
-                        let resp = AuthTokenResponse { token: cached.token };
-                        let json = serde_json::to_string(&resp)
-                            .map_err(|e| Error::RustError(e.to_string()))?;
-                        let headers = cors_headers()?;
-                        headers.set("Content-Type", "application/json")?;
-                        return Ok(Response::ok(json)?.with_headers(headers));
-                    }
-                }
             }
 
             // 캐시 미스 또는 비밀번호 불일치 — SSO 서버 호출
@@ -439,15 +440,17 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
                         token: token.clone(),
                         password_hash: hash_password(&body.password),
                     };
-                    // KV에 저장 (Cloudflare), 없으면 Redis에 저장 (로컬)
-                    if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
+                    // WEBDIS_URL 설정 시 Redis에 저장, 없으면 Cloudflare KV에 저장
+                    if !webdis_url.is_empty() {
+                        if let Ok(json) = serde_json::to_string(&cached) {
+                            webdis_setex(&webdis_url, &kv_key, 82800, &json).await;
+                        }
+                    } else if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
                         if let Ok(json) = serde_json::to_string(&cached) {
                             if let Ok(builder) = kv.put(&kv_key, &json) {
                                 let _ = builder.expiration_ttl(82800).execute().await;
                             }
                         }
-                    } else if let Ok(json) = serde_json::to_string(&cached) {
-                        webdis_setex(&webdis_url, &kv_key, 82800, &json).await;
                     }
                     let resp = AuthTokenResponse { token };
                     let json = serde_json::to_string(&resp)
@@ -468,10 +471,10 @@ async fn fetch(req: Request, _env: Env, _ctx: Context) -> Result<Response> {
             let webdis_url = ctx.var("WEBDIS_URL").map(|v| v.to_string()).unwrap_or_default();
             if let Ok(body) = req.json::<LogoutRequest>().await {
                 let kv_key = format!("token:{}", body.id);
-                if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
-                    let _ = kv.delete(&kv_key).await;
-                } else {
+                if !webdis_url.is_empty() {
                     webdis_del(&webdis_url, &kv_key).await;
+                } else if let Ok(kv) = ctx.kv("CHAPEL_AUTH_CACHE") {
+                    let _ = kv.delete(&kv_key).await;
                 }
             }
             cors_response(Response::ok("{}")?.with_headers(cors_headers()?))
