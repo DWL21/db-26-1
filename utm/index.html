@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>UTM + QR 생성기 — ssu-chapel</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -273,6 +274,52 @@
       cursor: pointer;
       line-height: 1;
     }
+
+    /* ── 포스터 합성 ── */
+    .poster-preview-wrap {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px dashed #e2e8f0;
+      cursor: crosshair;
+      background: #f1f5f9;
+      transition: border-color 0.15s;
+    }
+    .poster-preview-wrap:hover { border-color: #6366f1; }
+    .poster-preview-wrap canvas { width: 100%; display: block; }
+    .poster-hint {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      text-align: center;
+      margin: 0.4rem 0 0.75rem;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .slider-row label { white-space: nowrap; margin-bottom: 0; }
+    .slider-row input[type=range] {
+      flex: 1;
+      padding: 0;
+      border: none;
+      background: none;
+      height: 20px;
+      accent-color: #6366f1;
+    }
+    .slider-val {
+      font-size: 0.78rem;
+      color: #475569;
+      min-width: 3.5rem;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .poster-loading {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      padding: 2rem 0;
+    }
   </style>
 </head>
 <body>
@@ -339,6 +386,21 @@
           <button class="btn-secondary" id="btn-copy" onclick="copyUrl()">URL 복사</button>
           <button class="btn-secondary" onclick="downloadQR()">QR 다운로드</button>
         </div>
+
+        <div id="poster-section" style="display:none; margin-top:1.25rem;">
+          <div class="card-title">포스터 합성</div>
+          <div class="poster-preview-wrap" id="poster-preview-wrap">
+            <div class="poster-loading" id="poster-loading">포스터 불러오는 중...</div>
+            <canvas id="poster-canvas" style="display:none"></canvas>
+          </div>
+          <div class="poster-hint" id="poster-pos-hint">포스터를 클릭하여 QR 삽입 위치를 지정하세요</div>
+          <div class="slider-row">
+            <label>QR 크기</label>
+            <input type="range" id="qr-poster-size" min="80" max="600" value="220" step="10" oninput="onPosterSizeChange()" />
+            <span class="slider-val" id="qr-poster-size-val">220px</span>
+          </div>
+          <button class="btn-secondary" style="width:100%" onclick="downloadPoster()">포스터 다운로드</button>
+        </div>
       </div>
     </div>
 
@@ -366,6 +428,14 @@
       <div class="btn-row" style="margin-top:0.75rem">
         <button class="btn-secondary" id="modal-copy" onclick="copyModal()">URL 복사</button>
         <button class="btn-secondary" onclick="downloadModalQR()">QR 다운로드</button>
+        <button class="btn-secondary" onclick="toggleModalPoster()">포스터 합성</button>
+      </div>
+      <div id="modal-poster-section" style="display:none; margin-top:1rem;">
+        <div class="poster-preview-wrap">
+          <canvas id="modal-poster-canvas"></canvas>
+        </div>
+        <div class="poster-hint" id="modal-poster-hint">자동 위치 감지 중...</div>
+        <button class="btn-secondary" style="width:100%;margin-top:0.5rem" onclick="downloadModalPoster()">포스터 다운로드</button>
       </div>
     </div>
   </div>
@@ -441,6 +511,7 @@
       renderQRWithUrl('qr-canvas', finalUrl, 240);
       document.getElementById('result').style.display = 'block';
       document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+      initPosterSection(finalUrl);
     }
 
     function copyUrl() {
@@ -550,6 +621,210 @@
       document.getElementById(`page-${tab}`).classList.add('active');
       if (tab === 'list') renderList();
     }
+
+    // ─── 포스터 QR 합성 ─────────────────────────────────────
+    const POSTER_SRC = 'assets/chapel-poster.png';
+
+    const _pImg = new Image();
+    let _pLoaded = false;
+    let _pDetected = null; // { cx, cy, size } — 원본 QR 자동 감지 결과
+
+    function _detectPosterQR() {
+      if (!_pLoaded || typeof jsQR === 'undefined') return;
+      const tmp = document.createElement('canvas');
+      tmp.width = _pImg.naturalWidth;
+      tmp.height = _pImg.naturalHeight;
+      tmp.getContext('2d').drawImage(_pImg, 0, 0);
+      const imgData = tmp.getContext('2d').getImageData(0, 0, tmp.width, tmp.height);
+      const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+      if (code) {
+        const loc = code.location;
+        const pts = [loc.topLeftCorner, loc.topRightCorner, loc.bottomRightCorner, loc.bottomLeftCorner];
+        const cx = Math.round(pts.reduce((s, p) => s + p.x, 0) / 4);
+        const cy = Math.round(pts.reduce((s, p) => s + p.y, 0) / 4);
+        const w = Math.hypot(loc.topRightCorner.x - loc.topLeftCorner.x, loc.topRightCorner.y - loc.topLeftCorner.y);
+        const h = Math.hypot(loc.bottomLeftCorner.x - loc.topLeftCorner.x, loc.bottomLeftCorner.y - loc.topLeftCorner.y);
+        _pDetected = { cx, cy, size: Math.round((w + h) / 2) };
+      }
+    }
+
+    _pImg.onload = () => { _pLoaded = true; _detectPosterQR(); };
+    _pImg.src = POSTER_SRC;
+
+    let _pQrOffscreen = null;
+    let _pQrUrl = '';
+    let _pQrSize = 220;
+    let _pQrX = -1, _pQrY = -1;
+
+    function _buildQrOffscreen(url, size) {
+      return new Promise(resolve => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+        document.body.appendChild(wrap);
+        new QRCode(wrap, {
+          text: url, width: size, height: size,
+          colorDark: '#0f172a', colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M,
+        });
+        setTimeout(() => {
+          const qc = wrap.querySelector('canvas');
+          let off = null;
+          if (qc) {
+            off = document.createElement('canvas');
+            off.width = size; off.height = size;
+            off.getContext('2d').drawImage(qc, 0, 0);
+          }
+          document.body.removeChild(wrap);
+          resolve(off);
+        }, 150);
+      });
+    }
+
+    // 공용 캔버스 드로우 함수
+    function _drawPosterOnCanvas(canvas, qrOff, cx, cy, size) {
+      if (!_pLoaded) return;
+      if (canvas.width !== _pImg.naturalWidth) {
+        canvas.width = _pImg.naturalWidth;
+        canvas.height = _pImg.naturalHeight;
+      }
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(_pImg, 0, 0);
+      if (qrOff && cx >= 0) {
+        ctx.drawImage(qrOff, cx - Math.round(size / 2), cy - Math.round(size / 2), size, size);
+      }
+    }
+
+    function _redrawPoster() {
+      _drawPosterOnCanvas(document.getElementById('poster-canvas'), _pQrOffscreen, _pQrX, _pQrY, _pQrSize);
+    }
+
+    async function initPosterSection(url) {
+      _pQrUrl = url;
+      _pQrOffscreen = null;
+
+      // 자동 감지 결과 적용
+      if (_pDetected) {
+        _pQrX = _pDetected.cx;
+        _pQrY = _pDetected.cy;
+        _pQrSize = _pDetected.size;
+        document.getElementById('qr-poster-size').value = _pQrSize;
+        document.getElementById('qr-poster-size-val').textContent = _pQrSize + 'px';
+        document.getElementById('poster-pos-hint').textContent = 'QR 위치 자동 감지됨 — 클릭하면 위치 이동';
+      } else {
+        _pQrX = -1; _pQrY = -1;
+        _pQrSize = parseInt(document.getElementById('qr-poster-size').value);
+        document.getElementById('poster-pos-hint').textContent = '포스터를 클릭하여 QR 삽입 위치를 지정하세요';
+      }
+
+      document.getElementById('poster-section').style.display = 'block';
+
+      const showCanvas = async () => {
+        document.getElementById('poster-loading').style.display = 'none';
+        const canvas = document.getElementById('poster-canvas');
+        canvas.style.display = 'block';
+        _pQrOffscreen = await _buildQrOffscreen(url, _pQrSize);
+        _redrawPoster();
+      };
+
+      if (_pLoaded) {
+        showCanvas();
+      } else {
+        _pImg.onload = () => { _pLoaded = true; _detectPosterQR(); showCanvas(); };
+      }
+    }
+
+    async function onPosterSizeChange() {
+      const newSize = parseInt(document.getElementById('qr-poster-size').value);
+      document.getElementById('qr-poster-size-val').textContent = newSize + 'px';
+      if (newSize === _pQrSize || !_pQrUrl) return;
+      _pQrSize = newSize;
+      _pQrOffscreen = await _buildQrOffscreen(_pQrUrl, _pQrSize);
+      _redrawPoster();
+    }
+
+    function downloadPoster() {
+      if (_pQrX < 0) { alert('QR 위치를 지정하세요.'); return; }
+      const canvas = document.getElementById('poster-canvas');
+      const source   = document.getElementById('utm-source').value.trim();
+      const campaign = document.getElementById('utm-campaign').value.trim();
+      const content  = document.getElementById('utm-content').value.trim();
+      const a = document.createElement('a');
+      a.download = `poster_${source}_${campaign}${content ? '_' + content : ''}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+
+    // ─── 모달 포스터 합성 ───────────────────────────────────
+    let _modalQrOff = null;
+    let _modalQrCx = -1, _modalQrCy = -1, _modalQrSize = 220;
+
+    async function toggleModalPoster() {
+      const section = document.getElementById('modal-poster-section');
+      if (section.style.display !== 'none') { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      if (!modalEntry) return;
+
+      const hint   = document.getElementById('modal-poster-hint');
+      const canvas = document.getElementById('modal-poster-canvas');
+
+      if (_pDetected) {
+        _modalQrCx   = _pDetected.cx;
+        _modalQrCy   = _pDetected.cy;
+        _modalQrSize = _pDetected.size;
+        hint.textContent = 'QR 위치 자동 감지됨 — 클릭하면 위치 이동';
+      } else {
+        _modalQrCx = -1; _modalQrCy = -1; _modalQrSize = 220;
+        hint.textContent = '포스터를 클릭하여 QR 위치를 지정하세요';
+      }
+
+      _modalQrOff = await _buildQrOffscreen(modalEntry.url, _modalQrSize);
+      _drawPosterOnCanvas(canvas, _modalQrOff, _modalQrCx, _modalQrCy, _modalQrSize);
+    }
+
+    function downloadModalPoster() {
+      const canvas = document.getElementById('modal-poster-canvas');
+      if (!canvas.width || _modalQrCx < 0) { alert('포스터를 클릭하여 QR 위치를 지정하세요.'); return; }
+      const a = document.createElement('a');
+      a.download = `poster_${modalEntry.source}_${modalEntry.campaign}_${modalEntry.content}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 생성 탭 — 포스터 클릭으로 위치 조정
+      document.getElementById('poster-canvas').addEventListener('click', async (e) => {
+        const canvas = e.currentTarget;
+        if (!canvas.width) return;
+        const rect = canvas.getBoundingClientRect();
+        _pQrX = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
+        _pQrY = Math.round((e.clientY - rect.top)  * (canvas.height / rect.height));
+        if (!_pQrOffscreen && _pQrUrl) _pQrOffscreen = await _buildQrOffscreen(_pQrUrl, _pQrSize);
+        _redrawPoster();
+        document.getElementById('poster-pos-hint').textContent =
+          `위치 조정됨 (${_pQrX}, ${_pQrY}) — 다시 클릭하면 이동`;
+      });
+
+      // 모달 — 포스터 클릭으로 위치 조정
+      document.getElementById('modal-poster-canvas').addEventListener('click', async (e) => {
+        const canvas = e.currentTarget;
+        if (!canvas.width || !modalEntry) return;
+        const rect = canvas.getBoundingClientRect();
+        _modalQrCx = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
+        _modalQrCy = Math.round((e.clientY - rect.top)  * (canvas.height / rect.height));
+        if (!_modalQrOff) _modalQrOff = await _buildQrOffscreen(modalEntry.url, _modalQrSize);
+        _drawPosterOnCanvas(canvas, _modalQrOff, _modalQrCx, _modalQrCy, _modalQrSize);
+        document.getElementById('modal-poster-hint').textContent =
+          `위치 조정됨 (${_modalQrCx}, ${_modalQrCy}) — 다시 클릭하면 이동`;
+      });
+
+      // 모달 닫힐 때 포스터 섹션도 닫기
+      document.getElementById('modal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('modal')) {
+          document.getElementById('modal-poster-section').style.display = 'none';
+          _modalQrOff = null;
+        }
+      });
+    });
   </script>
 </body>
 </html>
