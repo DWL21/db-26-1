@@ -480,14 +480,19 @@ function App() {
                     {attendedCount}
                     <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--text-secondary)' }}> / {requiredAttendance}회 필요</span>
                   </span>
-                  <span className="stat-subtitle" style={{
-                    color: isOfficiallyPassed ? 'var(--success-color)'
-                      : remainingAbsences > 0 ? 'var(--success-color)'
-                      : remainingAbsences === 0 ? '#d97706' : 'var(--error-color)'
-                  }}>
-                    {isOfficiallyPassed ? '통과 기준 충족'
-                      : remainingAbsences === 0 ? '결석 한도 도달'
-                      : remainingAbsences < 0 ? `한도 ${Math.abs(remainingAbsences)}회 초과` : ''}
+<span className={`attendance-result-badge ${
+                    isOfficiallyPassed ? 'badge-pass'
+                      : remainingAbsences > 0 ? 'badge-ok'
+                      : remainingAbsences === 0 ? 'badge-warn'
+                      : 'badge-fail'
+                  }`}>
+                    {isOfficiallyPassed ? '✓' : remainingAbsences > 0 ? '✓' : remainingAbsences === 0 ? '!' : '✕'}
+                    <span>
+                      {isOfficiallyPassed ? '통과'
+                        : remainingAbsences > 0 ? `여유 ${remainingAbsences}회`
+                        : remainingAbsences === 0 ? '한도 도달'
+                        : `${Math.abs(remainingAbsences)}회 초과`}
+                    </span>
                   </span>
                 </div>
               </div>

@@ -839,17 +839,32 @@ body {
 }
 
 .attendance-status {
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.2rem 0.6rem;
-  border-radius: 0.25rem;
-  background: #f1f5f9;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
 }
 
-.status-present { color: #059669; }
-.status-absent { color: #dc2626; }
-.status-late { color: #d97706; }
-.status-unknown { color: #64748b; }
+.status-present { color: #059669; background: #dcfce7; }
+.status-absent  { color: #dc2626; background: #fee2e2; }
+.status-late    { color: #d97706; background: #ffedd5; }
+.status-unknown { color: #64748b; background: #f1f5f9; }
+
+/* Result badge */
+.attendance-result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  margin-top: 0.1rem;
+}
+
+.badge-pass, .badge-ok { color: #059669; background: #dcfce7; }
+.badge-warn             { color: #d97706; background: #ffedd5; }
+.badge-fail             { color: #dc2626; background: #fee2e2; }
 
 .attendance-details {
   display: flex;
