@@ -687,7 +687,7 @@
     }
 
     // 공용 캔버스 드로우 함수
-    function _drawPosterOnCanvas(canvas, qrOff, cx, cy, size) {
+    function _drawPosterOnCanvas(canvas, qrOff, cx, cy, size, label) {
       if (!_pLoaded) return;
       if (canvas.width !== _pImg.naturalWidth) {
         canvas.width = _pImg.naturalWidth;
@@ -698,10 +698,26 @@
       if (qrOff && cx >= 0) {
         ctx.drawImage(qrOff, cx - Math.round(size / 2), cy - Math.round(size / 2), size, size);
       }
+      if (label) {
+        const fontSize = Math.max(18, Math.round(canvas.width * 0.016));
+        const pad = Math.round(canvas.width * 0.012);
+        ctx.font = `${fontSize}px -apple-system, sans-serif`;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillText(label, canvas.width - pad, pad);
+      }
+    }
+
+    function _posterLabel() {
+      const source   = document.getElementById('utm-source').value.trim();
+      const campaign = document.getElementById('utm-campaign').value.trim();
+      const content  = document.getElementById('utm-content').value.trim();
+      return [source, campaign, content].filter(Boolean).join(' / ');
     }
 
     function _redrawPoster() {
-      _drawPosterOnCanvas(document.getElementById('poster-canvas'), _pQrOffscreen, _pQrX, _pQrY, _pQrSize);
+      _drawPosterOnCanvas(document.getElementById('poster-canvas'), _pQrOffscreen, _pQrX, _pQrY, _pQrSize, _posterLabel());
     }
 
     async function initPosterSection(url) {
@@ -795,7 +811,12 @@
       }
 
       _modalQrOff = await _buildQrOffscreen(modalEntry.url, _modalQrSize);
-      _drawPosterOnCanvas(canvas, _modalQrOff, _modalQrCx, _modalQrCy, _modalQrSize);
+      _drawPosterOnCanvas(canvas, _modalQrOff, _modalQrCx, _modalQrCy, _modalQrSize, _modalLabel());
+    }
+
+    function _modalLabel() {
+      if (!modalEntry) return '';
+      return [modalEntry.source, modalEntry.campaign, modalEntry.content].filter(Boolean).join(' / ');
     }
 
     function resetModalPosterQrPos() {
@@ -804,7 +825,7 @@
       _modalQrCy   = _pDetected.cy;
       _modalQrSize = _pDetected.size;
       document.getElementById('modal-poster-hint').textContent = 'QR 위치 자동 감지됨 — 클릭하면 위치 이동';
-      _drawPosterOnCanvas(document.getElementById('modal-poster-canvas'), _modalQrOff, _modalQrCx, _modalQrCy, _modalQrSize);
+      _drawPosterOnCanvas(document.getElementById('modal-poster-canvas'), _modalQrOff, _modalQrCx, _modalQrCy, _modalQrSize, _modalLabel());
     }
 
     function downloadModalPoster() {
@@ -838,7 +859,7 @@
         _modalQrCx = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
         _modalQrCy = Math.round((e.clientY - rect.top)  * (canvas.height / rect.height));
         if (!_modalQrOff) _modalQrOff = await _buildQrOffscreen(modalEntry.url, _modalQrSize);
-        _drawPosterOnCanvas(canvas, _modalQrOff, _modalQrCx, _modalQrCy, _modalQrSize);
+        _drawPosterOnCanvas(canvas, _modalQrOff, _modalQrCx, _modalQrCy, _modalQrSize, _modalLabel());
         document.getElementById('modal-poster-hint').textContent =
           `위치 조정됨 (${_modalQrCx}, ${_modalQrCy}) — 다시 클릭하면 이동`;
       });
