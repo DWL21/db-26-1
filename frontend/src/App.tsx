@@ -458,7 +458,6 @@ function App() {
         {error && <div className="alert-error">{error}</div>}
 
         {chapelData ? (() => {
-          const totalSessions    = chapelData.attendances.length;
           const attendedCount    = chapelData.attendances.filter(a => a.attendance === '출석').length;
           const unknownValues    = [...new Set(chapelData.attendances.map(a => a.attendance).filter(v => !['출석', '결석', '지각'].includes(v)))];
           if (unknownValues.length > 0) console.warn('[chapel] unhandled attendance values:', unknownValues);
