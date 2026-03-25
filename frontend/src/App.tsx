@@ -434,6 +434,7 @@ function App() {
     if (attendance === '출석') return 'status-present';
     if (attendance === '결석') return 'status-absent';
     if (attendance === '지각') return 'status-late';
+    console.warn('[chapel] unknown attendance value:', JSON.stringify(attendance));
     return 'status-unknown';
   };
 
@@ -459,9 +460,12 @@ function App() {
         {chapelData ? (() => {
           const totalSessions    = chapelData.attendances.length;
           const attendedCount    = chapelData.attendances.filter(a => a.attendance === '출석').length;
-          const absentCount      = chapelData.general_information.absence_time;
-          const requiredAttendance = Math.ceil(totalSessions * 0.8);
-          const remainingAbsences  = (totalSessions - requiredAttendance) - absentCount;
+          const unknownValues    = [...new Set(chapelData.attendances.map(a => a.attendance).filter(v => !['출석', '결석', '지각'].includes(v)))];
+          if (unknownValues.length > 0) console.warn('[chapel] unhandled attendance values:', unknownValues);
+          const absentCount        = chapelData.general_information.absence_time;
+          const TOTAL_SESSIONS_FIXED = 8;
+          const requiredAttendance = Math.ceil(TOTAL_SESSIONS_FIXED * 0.8); // 7
+          const remainingAbsences  = (TOTAL_SESSIONS_FIXED - requiredAttendance) - absentCount;
           const isOfficiallyPassed = chapelData.general_information.result === 'P';
           return (
             <>
@@ -478,7 +482,7 @@ function App() {
                   <span className="stat-label">출결 현황</span>
                   <span className="stat-value">
                     {attendedCount}
-                    <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--text-secondary)' }}> / {requiredAttendance}회 필요</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--text-secondary)' }}> / {TOTAL_SESSIONS_FIXED}회 중</span>
                   </span>
 <span className={`attendance-result-badge ${
                     isOfficiallyPassed ? 'badge-pass'
