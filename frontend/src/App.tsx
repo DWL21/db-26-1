@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
-import TermsOfServiceModal from './TermsOfServiceModal';
 
 // ── 상수 ──────────────────────────────────────────────
 const FLOOR_2_MAX_ROW = 6; // 2층은 1~6행, 7행부터 3층
@@ -39,17 +38,19 @@ function ChapelMiniMap({
   displaySection,
   userSection,
   onSectionClick,
+  isDarkMode
 }: {
   displaySection: string | null;
   userSection: string | null;
   onSectionClick: (s: string) => void;
+  isDarkMode: boolean;
 }) {
   const userGroup  = SECTIONS_23F.includes(userSection  ?? '') ? '23' : '1';
   const viewGroup  = SECTIONS_23F.includes(displaySection ?? '') ? '23' : '1';
 
   return (
     <div className="chapel-floors-container">
-      <div className="chapel-stage-bar">중앙무대</div>
+      <div className="chapel-stage-bar" style={{ backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#94a3b8' : '#64748b' }}>중앙무대</div>
       {FLOOR_GROUPS.map(({ key, label, sections }) => {
         const isUserFloor = key === userGroup && userSection !== null;
         const isViewFloor = key === viewGroup && displaySection !== null;
@@ -65,9 +66,15 @@ function ChapelMiniMap({
                 if (isViewed) cls += ' active';
                 if (isUser && !isViewed) cls += ' user-marker';
                 return (
-                  <div key={s} className={cls} onClick={() => onSectionClick(s)} title={`${s}구역`}>
+                  <div key={s} className={cls} onClick={() => onSectionClick(s)} title={`${s}구역`}
+                    style={{ 
+                        backgroundColor: isViewed ? (isDarkMode ? '#38bdf8' : '#002147') : (isDarkMode ? '#1e293b' : '#f8fafc'),
+                        color: isViewed ? '#fff' : (isDarkMode ? '#cbd5e1' : '#64748b'),
+                        borderColor: isDarkMode ? '#334155' : '#e2e8f0'
+                    }}>
                     {s}
-                    {isUser && !isViewed && <span className="user-dot" />}
+                    {/* 핑 효과 클래스 유지 */}
+                    {isUser && !isViewed && <span className="user-dot seat-ping" />}
                   </div>
                 );
               })}
@@ -84,10 +91,12 @@ function SeatSectionGrid({
   section,
   userRow,
   userCol,
+  isDarkMode
 }: {
   section: string;
   userRow?: number;
   userCol?: number;
+  isDarkMode: boolean;
 }) {
   const rowCols   = SECTION_ROW_COLS[section] ?? [];
   const is23F     = SECTIONS_23F.includes(section);
@@ -98,7 +107,7 @@ function SeatSectionGrid({
   for (let r = 1; r <= totalRows; r++) {
     if (is23F && r === FLOOR_2_MAX_ROW + 1) {
       rows.push(
-        <div key="corridor" className="seat-floor-corridor">
+        <div key="corridor" className="seat-floor-corridor" style={{ color: isDarkMode ? '#94a3b8' : '#64748b', backgroundColor: isDarkMode ? '#334155' : '#f8fafc' }}>
           <span>— 복도 —</span>
           <span className="corridor-hint">2층 ↑  ↓ 3층</span>
         </div>
@@ -111,7 +120,7 @@ function SeatSectionGrid({
       rows.push(
         <div key={r} className="seat-grid-row">
           <div className={`seat-row-label${isMineRow ? ' my-row' : ''}`}>{r}</div>
-          <div className="seat-wheelchair-row">♿ 장애인석</div>
+          <div className="seat-wheelchair-row" style={{ color: isDarkMode ? '#f87171' : '#ef4444' }}>♿ 장애인석</div>
         </div>
       );
       continue;
@@ -126,7 +135,12 @@ function SeatSectionGrid({
           const isMine = isMineRow && c === userCol;
           if (!exists) return <div key={c} className="seat-cell seat-cell-void" />;
           return (
-            <div key={c} className={`seat-cell${isMine ? ' my-seat' : ''}`}>
+            // 핑 효과 클래스 유지
+            <div key={c} className={`seat-cell${isMine ? ' my-seat seat-ping' : ''}`}
+                 style={{ 
+                    backgroundColor: isMine ? (isDarkMode ? '#38bdf8' : '#002147') : (isDarkMode ? '#334155' : '#e2e8f0'),
+                    borderColor: isDarkMode ? '#475569' : '#cbd5e1'
+                 }}>
               {isMine ? '★' : ''}
             </div>
           );
@@ -140,7 +154,7 @@ function SeatSectionGrid({
       <div className="seat-section-title">
         {section}구역 좌석 배치{is23F ? <span className="seat-section-floor-tag">2·3층</span> : ''}
       </div>
-      <div className="seat-section-stage-hint">↑ 무대</div>
+      <div className="seat-section-stage-hint" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>↑ 무대</div>
       <div className="seat-section-scroll">
         <div className="seat-grid-header">
           <div className="seat-label-spacer" />
@@ -159,9 +173,10 @@ function SeatSectionGrid({
 // ── 나의 지정 좌석 뷰어 (로그인 후) ──────────────────
 interface SeatViewerProps {
   seatNumber: string;
+  isDarkMode: boolean;
 }
 
-function SeatViewer({ seatNumber }: SeatViewerProps) {
+function SeatViewer({ seatNumber, isDarkMode }: SeatViewerProps) {
   const { section, row, col } = parseSeat(seatNumber);
   const [viewSection, setViewSection] = useState<string | null>(null);
 
@@ -177,33 +192,33 @@ function SeatViewer({ seatNumber }: SeatViewerProps) {
   const isUnassigned = !section;
 
   return (
-    <div className="seat-viewer-card">
+    <div className="seat-viewer-card" style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#e2e8f0' }}>
       <div className="seat-viewer-title">나의 지정 좌석</div>
 
       {isUnassigned ? (
-        <div style={{ textAlign: 'center', padding: '1rem 0 0.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+        <div style={{ textAlign: 'center', padding: '1rem 0 0.5rem', color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: '0.85rem' }}>
           <div style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>🪑</div>
-          <div style={{ fontWeight: 600, color: '#64748b' }}>미지정</div>
+          <div style={{ fontWeight: 600 }}>미지정</div>
           <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>이번 학기 좌석이 배정되지 않았습니다.</div>
         </div>
       ) : (
         <>
           <div className="seat-info-row">
-            <div className="seat-section-box">
+            <div className="seat-section-box" style={{ backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', color: isDarkMode ? '#f1f5f9' : '#002147' }}>
               <div className="seat-big-value">{section}</div>
               <div className="seat-meta-label">구역</div>
             </div>
-            <div className="seat-divider-vertical" />
+            <div className="seat-divider-vertical" style={{ backgroundColor: isDarkMode ? '#475569' : '#e2e8f0' }} />
             {row && (
               <>
-                <div className="seat-number-box">
+                <div className="seat-number-box" style={{ backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', color: isDarkMode ? '#f1f5f9' : '#002147' }}>
                   <div className="seat-big-value">{row}</div>
                   <div className="seat-meta-label">행</div>
                 </div>
-                <div className="seat-divider-vertical" />
+                <div className="seat-divider-vertical" style={{ backgroundColor: isDarkMode ? '#475569' : '#e2e8f0' }} />
               </>
             )}
-            <div className="seat-number-box" style={{ background: '#0369a1' }}>
+            <div className="seat-number-box" style={{ background: isDarkMode ? '#0ea5e9' : '#0369a1' }}>
               <div className="seat-big-value">{col ?? '-'}</div>
               <div className="seat-meta-label">열</div>
             </div>
@@ -223,6 +238,7 @@ function SeatViewer({ seatNumber }: SeatViewerProps) {
               displaySection={displaySection}
               userSection={section}
               onSectionClick={handleSectionClick}
+              isDarkMode={isDarkMode}
             />
 
             {displaySection && (
@@ -230,11 +246,12 @@ function SeatViewer({ seatNumber }: SeatViewerProps) {
                 section={displaySection}
                 userRow={isViewingOwn ? userRow : undefined}
                 userCol={isViewingOwn ? userCol : undefined}
+                isDarkMode={isDarkMode}
               />
             )}
 
             <div className="chapel-mini-footer">
-              <span className="you-badge">
+              <span className="you-badge" style={{ backgroundColor: isDarkMode ? '#0c4a6e' : '#f0f9ff', color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
                 내 자리: {section}구역{row ? ` ${row}행` : ''}{col ? ` ${col}열` : ''}
               </span>
             </div>
@@ -246,23 +263,24 @@ function SeatViewer({ seatNumber }: SeatViewerProps) {
 }
 
 // ── 구역 탐색 (비로그인) ─────────────────────────────
-function SectionBrowser() {
+function SectionBrowser({ isDarkMode }: { isDarkMode: boolean }) {
   const [viewSection, setViewSection] = useState<string | null>(null);
 
   const handleClick = (s: string) =>
     setViewSection(prev => (prev === s ? null : s));
 
   return (
-    <div className="section-browser-card">
+    <div className="section-browser-card" style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#e2e8f0' }}>
       <div className="section-browser-title">구역 탐색</div>
       <div className="section-browser-map">
         <ChapelMiniMap
           displaySection={viewSection}
           userSection={null}
           onSectionClick={handleClick}
+          isDarkMode={isDarkMode}
         />
       </div>
-      {viewSection && <SeatSectionGrid section={viewSection} />}
+      {viewSection && <SeatSectionGrid section={viewSection} isDarkMode={isDarkMode} />}
     </div>
   );
 }
@@ -299,7 +317,6 @@ interface ChapelResponse {
 function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
   const [userId, setUserId]     = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError]   = useState<string | null>(null);
@@ -317,6 +334,47 @@ function App() {
   const [showSeatingImage, setShowSeatingImage] = useState(false);
   const [error, setError]             = useState<string | null>(null);
   const [chapelData, setChapelData]   = useState<ChapelResponse | null>(null);
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => localStorage.getItem('theme') === 'dark');
+
+  const [animateWidth, setAnimateWidth] = useState(0);
+  const [stampVisible, setStampVisible] = useState(false);
+
+  // ── 출결 기록 더보기 상태 (이번에 추가됨) ──
+  const [showAllAttendance, setShowAllAttendance] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    document.body.style.backgroundColor = isDarkMode ? '#0f172a' : '#f8fafc';
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    if (chapelData) {
+      const total = chapelData.attendances.length;
+      const attended = chapelData.attendances.filter(a => a.attendance === '출석').length;
+      const required = Math.ceil(total * 0.8);
+      const targetPercent = (attended / required) * 100;
+      
+      setAnimateWidth(0); 
+      setStampVisible(false); 
+      const timer = setTimeout(() => {
+        setAnimateWidth(targetPercent);
+        setStampVisible(true);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [chapelData]);
+
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
+  const theme = {
+    bg: isDarkMode ? '#0f172a' : '#f8fafc',
+    panel: isDarkMode ? '#1e293b' : '#ffffff',
+    text: isDarkMode ? '#f1f5f9' : '#1e293b',
+    subText: isDarkMode ? '#94a3b8' : '#64748b',
+    ssuBlue: isDarkMode ? '#38bdf8' : '#002147',
+    border: isDarkMode ? '#334155' : '#e2e8f0'
+  };
 
   const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
 
@@ -420,6 +478,9 @@ function App() {
     localStorage.removeItem('ssu_userid');
     setToken(null);
     setChapelData(null);
+    setAnimateWidth(0); 
+    setStampVisible(false); 
+    setShowAllAttendance(false); // 리셋
     setLoading(false);
     (window as any).clarity?.('event', 'logout');
     (window as any).gtag?.('event', 'logout');
@@ -430,26 +491,123 @@ function App() {
 
   useEffect(() => { if (token) fetchChapelData(token, year, semester); }, []);
 
+  const getDDayInfo = () => {
+    if (!chapelData) return null;
+    const timeStr = chapelData.general_information.chapel_time;
+    const dayMap: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+    const targetDayChar = timeStr[0];
+    const targetDay = dayMap[targetDayChar];
+    const today = new Date();
+    const todayDay = today.getDay();
+    let diff = targetDay - todayDay;
+    if (diff < 0) diff += 7;
+    
+    const timeOnly = timeStr.match(/\(([^)]+)\)/)?.[1]?.split('~')[0] || timeStr;
+
+    return {
+      dayStr: targetDayChar,
+      timeOnly,
+      diff: diff
+    };
+  };
+
+  const dDay = getDDayInfo();
+
   const getStatusColor = (attendance: string) => {
     if (attendance === '출석') return 'status-present';
     if (attendance === '결석') return 'status-absent';
     if (attendance === '지각') return 'status-late';
-    console.warn('[chapel] unknown attendance value:', JSON.stringify(attendance));
     return 'status-unknown';
   };
 
-  return (
-    <div className="app-container" style={{ justifyContent: 'flex-start', paddingTop: '1.5rem' }}>
-      <div className="results-container glass-panel">
-        <div className="header-action">
-          <h1 className="title" style={{ margin: 0 }}>숭실대학교 채플 정보</h1>
+return (
+    <div className="app-container" style={{ 
+        justifyContent: 'flex-start', 
+        paddingTop: '1.5rem', 
+        backgroundColor: theme.bg,
+        minHeight: '100vh',
+        transition: 'background-color 0.3s ease'
+    }}>
+      <style>{`
+        @keyframes seat-ping-anim {
+          0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); transform: scale(1); }
+          70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); transform: scale(1.1); }
+          100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); transform: scale(1); }
+        }
+        .seat-ping {
+          animation: seat-ping-anim 1.5s infinite;
+          z-index: 10;
+          position: relative;
+        }
+      `}</style>
+
+      <button 
+        onClick={toggleTheme}
+        style={{
+          position: 'fixed', top: '1rem', right: '1rem', zIndex: 1000,
+          width: '42px', height: '42px', borderRadius: '50%', border: 'none',
+          backgroundColor: theme.panel, color: theme.text,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.15)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem'
+        }}
+      >
+        {isDarkMode ? '☀️' : '🌙'}
+      </button>
+
+      <div className="results-container glass-panel" style={{ 
+          position: 'relative', 
+          overflow: 'hidden',
+          backgroundColor: theme.panel,
+          color: theme.text,
+          borderColor: theme.border
+      }}>
+        
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '6px', backgroundColor: theme.ssuBlue }}></div>
+
+        <div className="header-action" style={{ marginTop: '0.5rem' }}>
+          <h1 className="title" style={{ margin: 0, color: theme.ssuBlue }}>숭실대학교 채플 정보</h1>
           {token && <button className="btn-icon" onClick={handleLogout}>로그아웃</button>}
         </div>
+
+        {chapelData && dDay && (
+          <div style={{
+            backgroundColor: isDarkMode ? 'rgba(56, 189, 248, 0.1)' : '#eff6ff',
+            border: `1px solid ${isDarkMode ? '#0ea5e9' : '#bfdbfe'}`,
+            borderRadius: '16px',
+            padding: '1.25rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: '0.85rem', color: isDarkMode ? '#38bdf8' : '#1e40af', fontWeight: 600, marginBottom: '4px' }}>
+                이번 주 채플 일정
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
+                {dDay.dayStr}요일 <span style={{ color: theme.ssuBlue }}>{dDay.timeOnly}</span>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: theme.subText, marginTop: '2px' }}>
+                한경직기념관 대강당
+              </div>
+            </div>
+            <div style={{
+              backgroundColor: theme.ssuBlue,
+              color: '#fff',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              fontWeight: 'bold',
+              fontSize: '1.2rem'
+            }}>
+              {dDay.diff === 0 ? 'D-Day' : `D-${dDay.diff}`}
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', marginTop: '0.25rem' }}>
           <h3 className="section-title" style={{ margin: 0 }}>나의 채플 정보</h3>
           {token && (
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+            <span style={{ fontSize: '0.85rem', color: theme.subText, fontWeight: 500 }}>
               {year}년 {semester}학기
             </span>
           )}
@@ -458,127 +616,200 @@ function App() {
         {error && <div className="alert-error">{error}</div>}
 
         {chapelData ? (() => {
+          const totalSessions    = chapelData.attendances.length;
           const attendedCount    = chapelData.attendances.filter(a => a.attendance === '출석').length;
-          const unknownValues    = [...new Set(chapelData.attendances.map(a => a.attendance).filter(v => !['출석', '결석', '지각'].includes(v)))];
-          if (unknownValues.length > 0) console.warn('[chapel] unhandled attendance values:', unknownValues);
-          const absentCount        = chapelData.general_information.absence_time;
-          const TOTAL_SESSIONS_FIXED = 8;
-          const requiredAttendance = Math.ceil(TOTAL_SESSIONS_FIXED * 0.8); // 7
-          const remainingAbsences  = (TOTAL_SESSIONS_FIXED - requiredAttendance) - absentCount;
+          const requiredAttendance = Math.ceil(totalSessions * 0.8);
           const isOfficiallyPassed = chapelData.general_information.result === 'P';
+
+          const completedSessions = chapelData.attendances.filter(a => a.attendance && a.attendance !== '-').length;
+          const remainingSessions = totalSessions - completedSessions;
+          const possibleFinalAttendance = attendedCount + remainingSessions;
+          const isFWarning = possibleFinalAttendance < requiredAttendance;
+          
+          const absentCount      = chapelData.general_information.absence_time;
+          const remainingAbsences  = (totalSessions - requiredAttendance) - absentCount;
+          
           return (
             <>
-              <div className="dashboard-grid">
-                <div className="stat-card">
-                  <span className="stat-label">채플 시간</span>
-                  <span className="stat-value">{chapelData.general_information.chapel_time.split('(')[0].trim()}</span>
-                  <span className="stat-subtitle">
-                    {chapelData.general_information.chapel_time.includes('(')
-                      ? chapelData.general_information.chapel_time.split('(')[1].replace(')', '') : ''}
-                  </span>
+              {isFWarning && !isOfficiallyPassed && (
+                <div style={{ 
+                    backgroundColor: isDarkMode ? '#450a0a' : '#fef2f2', 
+                    border: `1px solid ${isDarkMode ? '#991b1b' : '#fee2e2'}`, 
+                    borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' 
+                }}>
+                  <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                  <div>
+                    <p style={{ margin: 0, color: isDarkMode ? '#fca5a5' : '#991b1b', fontWeight: 'bold', fontSize: '0.9rem' }}>결석 위험 경고!</p>
+                    <p style={{ margin: 0, color: isDarkMode ? '#f87171' : '#b91c1c', fontSize: '0.8rem' }}>
+                      {remainingAbsences < 0 
+                        ? "이미 결석 한도를 " + Math.abs(remainingAbsences) + "회 초과했습니다. F 위험!" 
+                        : "남은 채플을 모두 출석해도 수료 기준(80%) 미달 위험이 있습니다."}
+                    </p>
+                  </div>
                 </div>
-                <div className="stat-card">
-                  <span className="stat-label">출결 현황</span>
+              )}
+
+              <div className="dashboard-grid">
+                <div className="stat-card" style={{ borderTop: `4px solid ${theme.ssuBlue}`, backgroundColor: theme.panel }}>
+                  <span className="stat-label" style={{ color: theme.subText }}>채플 시간</span>
+                  <span className="stat-value" style={{ color: theme.ssuBlue }}>
+                    {chapelData.general_information.chapel_time.split('(')[0].trim()}
+                  </span>
+                  <div style={{ height: '8px', width: '100%', backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', borderRadius: 999, overflow: 'hidden', marginTop: '12px' }}>
+                    <div style={{ 
+                      height: '100%', 
+                      transition: 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)', 
+                      width: `${Math.min(animateWidth, 100)}%`, 
+                      backgroundColor: isOfficiallyPassed ? '#10b981' : theme.ssuBlue 
+                    }}></div>
+                  </div>
+                </div>
+
+                <div className="stat-card" style={{ borderTop: isOfficiallyPassed ? '4px solid #10b981' : '4px solid #f59e0b', backgroundColor: theme.panel }}>
+                  <span className="stat-label" style={{ color: theme.subText }}>출결 현황</span>
                   <span className="stat-value">
                     {attendedCount}
-                    <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--text-secondary)' }}> / {TOTAL_SESSIONS_FIXED}회 중</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 400, color: theme.subText }}> / {requiredAttendance}회 필요</span>
                   </span>
-<span className={`attendance-result-badge ${
-                    isOfficiallyPassed ? 'badge-pass'
-                      : remainingAbsences > 0 ? 'badge-ok'
-                      : remainingAbsences === 0 ? 'badge-warn'
-                      : 'badge-fail'
-                  }`}>
-                    {isOfficiallyPassed ? '✓' : remainingAbsences > 0 ? '✓' : remainingAbsences === 0 ? '!' : '✕'}
-                    <span>
-                      {isOfficiallyPassed ? '통과'
-                        : remainingAbsences > 0 ? `여유 ${remainingAbsences}회`
-                        : remainingAbsences === 0 ? '여유 없음'
-                        : `${Math.abs(remainingAbsences)}회 초과`}
-                    </span>
+                  
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px', marginBottom: '8px' }}>
+                    {chapelData.attendances.map((record, idx) => {
+                      let bgColor = isDarkMode ? '#334155' : '#f8fafc';
+                      let textColor = isDarkMode ? '#64748b' : '#cbd5e1';
+                      let content: string | number = idx + 1;
+                      let borderStyle = `1px dashed ${isDarkMode ? '#475569' : '#cbd5e1'}`;
+
+                      if (record.attendance === '출석') {
+                        bgColor = isDarkMode ? '#1e3a8a' : '#eff6ff';
+                        textColor = isDarkMode ? '#60a5fa' : '#3b82f6';
+                        content = '출';
+                        borderStyle = `1px solid ${isDarkMode ? '#2563eb' : '#bfdbfe'}`;
+                      } else if (record.attendance === '결석') {
+                        bgColor = isDarkMode ? '#7f1d1d' : '#fef2f2';
+                        textColor = isDarkMode ? '#f87171' : '#ef4444';
+                        content = '결';
+                        borderStyle = `1px solid ${isDarkMode ? '#b91c1c' : '#fecaca'}`;
+                      } else if (record.attendance === '지각') {
+                        bgColor = isDarkMode ? '#78350f' : '#fffbeb';
+                        textColor = isDarkMode ? '#fbbf24' : '#f59e0b';
+                        content = '지';
+                        borderStyle = `1px solid ${isDarkMode ? '#d97706' : '#fde68a'}`;
+                      }
+
+                      return (
+                        <div key={idx} style={{
+                          width: '26px', height: '26px', borderRadius: '50%',
+                          backgroundColor: bgColor, color: textColor, border: borderStyle,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.75rem', fontWeight: 'bold',
+                          transition: 'all 0.5s ease',
+                          transform: stampVisible ? 'scale(1)' : 'scale(0)',
+                          opacity: stampVisible ? 1 : 0,
+                          transitionDelay: `${idx * 0.05}s`
+                        }}>
+                          {content}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <span className="stat-subtitle" style={{
+                    display: 'block',
+                    fontWeight: 'bold',
+                    color: isOfficiallyPassed ? '#10b981'
+                      : remainingAbsences > 0 ? '#10b981'
+                      : remainingAbsences === 0 ? '#d97706' : '#ef4444'
+                  }}>
+                    {isOfficiallyPassed ? '통과 기준 충족'
+                      : remainingAbsences === 0 ? '결석 한도 도달'
+                      : remainingAbsences < 0 ? "한도 " + Math.abs(remainingAbsences) + "회 초과" : ''}
                   </span>
                 </div>
               </div>
 
-              <SeatViewer
-                seatNumber={chapelData.general_information.seat_number}
-              />
+              <SeatViewer seatNumber={chapelData.general_information.seat_number} isDarkMode={isDarkMode} />
             </>
           );
         })() : (
           loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              <div className="spinner" style={{ margin: '0 auto 0.75rem', borderColor: '#e5e7eb', borderTopColor: 'var(--primary)' }} />
+            <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+              <div className="spinner" style={{ margin: '0 auto 0.75rem' }} />
               채플 정보를 불러오는 중...
             </div>
           ) : !token && (
             <>
-              <div className="login-prompt-card">
+              <div className="login-prompt-card" style={{ backgroundColor: isDarkMode ? '#334155' : '#f1f5f9' }}>
                 <div className="login-prompt-icon">🔒</div>
-                <p className="login-prompt-text">로그인하여 내 채플 정보를 확인하세요</p>
-                <p className="login-prompt-sub">좌석 배치, 출결 현황 등 개인 채플 정보를 조회할 수 있습니다.</p>
+                <p className="login-prompt-text" style={{ color: theme.text }}>로그인하여 내 채플 정보를 확인하세요</p>
+                <p className="login-prompt-sub" style={{ color: theme.subText }}>좌석 배치, 출결 현황 등 개인 채플 정보를 조회할 수 있습니다.</p>
                 <button className="btn-login-prompt" onClick={() => { setAuthError(null); setShowLoginModal(true); }}>
                   로그인하기
                 </button>
               </div>
-              <SectionBrowser />
+              <SectionBrowser isDarkMode={isDarkMode} />
             </>
           )
         )}
 
-        {/* 전체 좌석 안내도 토글 */}
         <div className="seating-image-toggle">
-          <button className="seating-toggle-btn" onClick={() => setShowSeatingImage(p => !p)}>
+          <button className="seating-toggle-btn" onClick={() => setShowSeatingImage(p => !p)} style={{ color: theme.text }}>
             <span>한경직기념관 전체 좌석 안내도</span>
-            <span className="seating-toggle-indicator">{showSeatingImage ? '▲ 닫기' : '▼ 보기'}</span>
+            <span className="seating-toggle-indicator" style={{ color: theme.subText }}>{showSeatingImage ? '▲ 닫기' : '▼ 보기'}</span>
           </button>
           {showSeatingImage && (
-            <img
-              src="https://chaplain.ssu.ac.kr/wp-content/uploads/sites/7/2018/05/ssu01_02_05_plan.jpg"
-              alt="한경직기념관 좌석 구조"
-              className="seating-chart-img"
+            <img 
+                src="https://chaplain.ssu.ac.kr/wp-content/uploads/sites/7/2018/05/ssu01_02_05_plan.jpg" 
+                alt="좌석 구조" 
+                className="seating-chart-img" 
+                style={{ filter: isDarkMode ? 'brightness(0.8) contrast(1.2)' : 'none' }}
             />
           )}
         </div>
 
-        {/* 출결 기록 */}
-        {chapelData && (
-          <>
-            <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)', fontSize: '1rem', marginTop: '1.5rem' }}>출결 기록</h3>
-            <div className="attendance-list">
-              {chapelData.attendances.length === 0 ? (
-                <div className="empty-state">출결 기록이 없습니다.</div>
-              ) : (
-                chapelData.attendances.map((record, index) => (
-                  <div key={index} className="attendance-card">
+        {/* ── 아코디언 및 최신순 정렬 적용된 출결 기록 (수정됨) ── */}
+        {chapelData && (() => {
+          const reversedAttendances = [...chapelData.attendances].reverse();
+          const visibleAttendances = showAllAttendance ? reversedAttendances : reversedAttendances.slice(0, 3);
+
+          return (
+            <>
+              <h3 style={{ marginBottom: '1rem', color: theme.text, fontSize: '1rem', marginTop: '1.5rem' }}>출결 기록</h3>
+              <div className="attendance-list">
+                {visibleAttendances.map((record, index) => (
+                  <div key={index} className="attendance-card" style={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}` }}>
                     <div className="attendance-header">
-                      <span className="attendance-date">{record.class_date}</span>
-                      <span className={`attendance-status ${getStatusColor(record.attendance)}`}>
-                        {record.attendance || '-'}
-                      </span>
-                    </div>
-                    <div className="attendance-details">
-                      <span className="attendance-category">{record.category}</span>
-                      <span className="attendance-instructor">
-                        {record.instructor}
-                        {record.instructor_department ? ` (${record.instructor_department})` : ''}
-                      </span>
+                      <span className="attendance-date" style={{ color: theme.text }}>{record.class_date}</span>
+                      <span className={`attendance-status ${getStatusColor(record.attendance)}`}>{record.attendance || '-'}</span>
                     </div>
                   </div>
-                ))
+                ))}
+              </div>
+              {reversedAttendances.length > 3 && (
+                <button
+                  onClick={() => setShowAllAttendance(!showAllAttendance)}
+                  style={{
+                    width: '100%', padding: '0.75rem', marginTop: '0.5rem',
+                    backgroundColor: 'transparent', border: `1px dashed ${theme.border}`,
+                    borderRadius: '8px', color: theme.subText, cursor: 'pointer',
+                    fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f1f5f9')}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  {showAllAttendance ? '▲ 접기' : `▼ 이전 기록 더보기 (${reversedAttendances.length - 3}개)`}
+                </button>
               )}
-            </div>
-          </>
-        )}
+            </>
+          );
+        })()}
       </div>
 
-      {/* 로그인 모달 */}
       {showLoginModal && (
         <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
-          <div className="modal-panel glass-panel" onClick={e => e.stopPropagation()}>
+          <div className="modal-panel glass-panel" onClick={e => e.stopPropagation()} style={{ backgroundColor: theme.panel, color: theme.text }}>
             <div className="modal-header">
-              <h2 className="modal-title">U-Saint 로그인</h2>
-              <button className="modal-close" onClick={() => setShowLoginModal(false)}>✕</button>
+              <h2 className="modal-title" style={{ color: theme.ssuBlue }}>U-Saint 로그인</h2>
+              <button className="modal-close" onClick={() => setShowLoginModal(false)} style={{ color: theme.text }}>✕</button>
             </div>
             {authError && <div className="alert-error">{authError}</div>}
             <form onSubmit={handleLogin}>
@@ -586,32 +817,36 @@ function App() {
                 <label htmlFor="userId">학번 (U-Saint 아이디)</label>
                 <input id="userId" type="text" className="input-field" placeholder="예: 20261234"
                   value={userId} onChange={e => setUserId(e.target.value)}
-                  disabled={authLoading} autoComplete="username" autoFocus />
+                  disabled={authLoading} autoComplete="username" autoFocus 
+                  style={{ backgroundColor: isDarkMode ? '#334155' : '#ffffff', color: theme.text, border: `1px solid ${theme.border}` }}
+                />
               </div>
               <div className="form-group" style={{ position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                   <label htmlFor="password" style={{ marginBottom: 0 }}>비밀번호</label>
                   <a href="https://smartid.ssu.ac.kr/Symtra_Sso/smln_pwd.asp" target="_blank"
                     rel="noopener noreferrer"
-                    style={{ fontSize: '0.75rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>
+                    style={{ fontSize: '0.75rem', color: theme.ssuBlue, textDecoration: 'none', fontWeight: 500 }}>
                     비밀번호 찾기
                   </a>
                 </div>
                 <input id="password" type="password" className="input-field" placeholder="U-Saint 비밀번호를 입력하세요"
                   value={password} onChange={e => setPassword(e.target.value)}
-                  disabled={authLoading} autoComplete="current-password" />
+                  disabled={authLoading} autoComplete="current-password" 
+                  style={{ backgroundColor: isDarkMode ? '#334155' : '#ffffff', color: theme.text, border: `1px solid ${theme.border}` }}
+                />
               </div>
-              <button type="submit" className="btn-primary" disabled={authLoading}>
+              <button type="submit" className="btn-primary" disabled={authLoading} style={{ backgroundColor: theme.ssuBlue }}>
                 {authLoading ? '로그인 중...' : '로그인'}
               </button>
             </form>
-            <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#64748b', textAlign: 'center', lineHeight: '1.5' }}>
+            <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: theme.subText, textAlign: 'center', lineHeight: '1.5' }}>
               <button
                 type="button"
                 onClick={() => setShowPrivacyModal(true)}
                 style={{
                   background: 'none', border: 'none', padding: 0,
-                  color: 'var(--primary, #6366f1)', cursor: 'pointer',
+                  color: theme.ssuBlue, cursor: 'pointer',
                   fontSize: '0.75rem', textDecoration: 'underline', fontWeight: 500,
                 }}
               >
@@ -619,53 +854,10 @@ function App() {
               </button>
               에 동의합니다.
             </p>
+            {showPrivacyModal && <PrivacyPolicyModal onClose={() => setShowPrivacyModal(false)} />}
           </div>
         </div>
       )}
-
-      {/* 푸터 */}
-      <footer style={{
-        width: '100%', maxWidth: '680px', margin: '1rem auto 1.5rem',
-        padding: '1rem 1rem 0',
-        borderTop: '1px solid var(--border-color)',
-        textAlign: 'center',
-      }}>
-        <a
-          href="https://docs.google.com/forms/d/e/1FAIpQLSfp-n6_nc1HiMZmhoYB1BYbgmNQ1_iKKd8nvO6osHfd7i86NQ/viewform"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-block', marginBottom: '0.75rem',
-            fontSize: '0.875rem', color: 'var(--primary)', fontWeight: 600,
-            textDecoration: 'none', letterSpacing: '-0.01em',
-          }}
-        >
-          서비스 의견 남기기 →
-        </a>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
-          <button
-            type="button"
-            onClick={() => setShowPrivacyModal(true)}
-            style={{ background: 'none', border: 'none', padding: 0, color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem' }}
-          >
-            개인정보 처리방침
-          </button>
-          <span style={{ color: '#e2e8f0', fontSize: '0.75rem', userSelect: 'none' }}>|</span>
-          <button
-            type="button"
-            onClick={() => setShowTermsModal(true)}
-            style={{ background: 'none', border: 'none', padding: 0, color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem' }}
-          >
-            이용약관
-          </button>
-        </div>
-        <p style={{ margin: 0, fontSize: '0.7rem', color: '#cbd5e1' }}>
-          © {new Date().getFullYear()} 숭실대학교 채플 좌석 조회 서비스. All rights reserved.
-        </p>
-      </footer>
-
-      {showPrivacyModal && <PrivacyPolicyModal onClose={() => setShowPrivacyModal(false)} />}
-      {showTermsModal && <TermsOfServiceModal onClose={() => setShowTermsModal(false)} />}
     </div>
   );
 }
