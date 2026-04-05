@@ -8,4 +8,4 @@ rusaint-wasm/node_modules/
 .wrangler/
 
 # Request/response logs
-log/.env
+log/
