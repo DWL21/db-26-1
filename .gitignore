@@ -1,3 +1,4 @@
+.env
 rusaint-cli/.env
 rusaint-wasm/target/
 rusaint-wasm/build/
@@ -7,4 +8,4 @@ rusaint-wasm/node_modules/
 .wrangler/
 
 # Request/response logs
-log/
+log/.env
