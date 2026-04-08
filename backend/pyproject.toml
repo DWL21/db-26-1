@@ -14,3 +14,6 @@ dependencies = [
     "alembic>=1.14",
     "pydantic-settings>=2.0",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
