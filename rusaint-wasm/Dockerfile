@@ -1,5 +1,5 @@
-# Stage 1: Rust WASM 빌드
-FROM rust:1.88-slim AS builder
+# Stage 1: Rust WASM 빌드 준비
+FROM rust:1.88-slim AS chef
 
 RUN apt-get update && apt-get install -y \
     pkg-config \
@@ -7,12 +7,29 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rustup target add wasm32-unknown-unknown
-RUN cargo install worker-build --locked
+RUN cargo install cargo-chef --locked && cargo install worker-build --locked
 
 WORKDIR /build
 
-# 소스 복사 (rusaint 라이브러리 포함)
+# 의존성 레이어용 레시피 생성
+FROM chef AS planner
 COPY rusaint/ ./rusaint/
+COPY rusaint-wasm/ ./rusaint-wasm/
+WORKDIR /build/rusaint-wasm
+RUN cargo chef prepare --recipe-path recipe.json
+
+# 의존성 캐시를 먼저 빌드한 뒤 실제 소스를 빌드
+FROM chef AS builder
+WORKDIR /build
+COPY rusaint/ ./rusaint/
+COPY rusaint-wasm/Cargo.toml ./rusaint-wasm/Cargo.toml
+COPY rusaint-wasm/Cargo.lock ./rusaint-wasm/Cargo.lock
+
+WORKDIR /build/rusaint-wasm
+COPY --from=planner /build/rusaint-wasm/recipe.json ./recipe.json
+RUN cargo chef cook --release --target wasm32-unknown-unknown --recipe-path recipe.json
+
+WORKDIR /build
 COPY rusaint-wasm/ ./rusaint-wasm/
 
 WORKDIR /build/rusaint-wasm
