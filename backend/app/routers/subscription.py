@@ -35,9 +35,11 @@ async def subscribe(body: SubscribeRequest, db: AsyncSession = Depends(get_db)):
     )
     existing = set(result.scalars().all())
 
+    seen = set()
     for cat in body.categories:
-        if cat.value not in existing:
+        if cat.value not in existing and cat.value not in seen:
             db.add(Subscription(subscriber_id=subscriber.id, category=cat.value))
+            seen.add(cat.value)
 
     await db.commit()
 
