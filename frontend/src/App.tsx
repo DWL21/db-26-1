@@ -705,6 +705,7 @@ return (
         )}
       </div>
 
+      {/* 1. 로그인 모달 (독립) */}
       {showLoginModal && (
         <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
           <div className="modal-panel glass-panel" onClick={e => e.stopPropagation()} style={{ backgroundColor: theme.panel, color: theme.text }}>
@@ -755,22 +756,25 @@ return (
               </button>
               에 동의합니다.
             </p>
-        
+          </div>
+        </div>
+      )}
 
+      {/* 2. 구독 모달 (분리) */}
       {showSubscriptionModal && (
         <div className="modal-overlay" onClick={() => setShowSubscriptionModal(false)}>
           <div className="modal-panel glass-panel" onClick={e => e.stopPropagation()} style={{ backgroundColor: theme.panel, color: theme.text, maxWidth: '500px' }}>
             <div className="modal-header">
-              <h2 className="modal-title" style={{ color: theme.ssuBlue }}>공지사항 구독</h2>
+              <h2 className="modal-title" style={{ color: theme.ssuBlue }}></h2>
               <button className="modal-close" onClick={() => setShowSubscriptionModal(false)} style={{ color: theme.text }}>✕</button>
             </div>
             <EmailSubscriptionForm isDarkMode={isDarkMode} onClose={() => setShowSubscriptionModal(false)} />
           </div>
         </div>
-      )}    {showPrivacyModal && <PrivacyPolicyModal onClose={() => setShowPrivacyModal(false)} />}
-          </div>
-        </div>
-      )}
+      )}    
+
+      {/* 3. 개인정보 모달 (분리) */}
+      {showPrivacyModal && <PrivacyPolicyModal onClose={() => setShowPrivacyModal(false)} />}
     </div>
   );
 }
