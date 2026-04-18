@@ -62,6 +62,22 @@ async def run_cron():
     return {"ok": True, "message": "Cron 실행 완료"}
 
 
+@app.get("/admin/preview-email")
+async def preview_email():
+    from fastapi.responses import HTMLResponse
+    from app.email_template import build_email_html
+
+    sample_notices = [
+        {"status": "진행", "category": "학사", "title": "2026학년도 1학기 수강신청 안내", "department": "교무처", "link": "#"},
+        {"status": "마감", "category": "장학", "title": "2026학년도 교내 장학금 신청 마감 안내 (추가 서류 제출 필수)", "department": "학생처", "link": "#"},
+        {"status": "", "category": "채용", "title": "2026년 상반기 공공기관 채용설명회 개최", "department": "대학일자리플러스센터", "link": "#"},
+        {"status": "진행", "category": "비교과·행사", "title": "제25회 숭실대학교 벤처경진대회 참가팀 모집", "department": "창업지원단", "link": "#"},
+        {"status": "", "category": "국제교류", "title": "2026-2학기 교환학생 프로그램 안내", "department": "국제교류처", "link": "#"},
+    ]
+    html = build_email_html(sample_notices, unsub_token="preview-test-token")
+    return HTMLResponse(html)
+
+
 @app.get("/health")
 async def health() -> JSONResponse:
     return JSONResponse({"status": "ok"})

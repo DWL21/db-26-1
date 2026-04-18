@@ -98,7 +98,7 @@ async def _collect_and_send():
                     seen_links.add(n["link"])
                     unique_notices.append(n)
 
-            html = build_email_html(unique_notices, target_date=today)
+            html = build_email_html(unique_notices, target_date=today, unsub_token=subscriber.unsub_token)
             subject = f"숭실대 공지사항 ({today.strftime('%Y.%m.%d')}) — {len(unique_notices)}건"
 
             try:

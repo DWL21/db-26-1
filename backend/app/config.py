@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     database_url: str
     debug: bool = False
     crawler_base_url: str = "http://scatch-crawler:8000"
-    email_from: str = "dbstjr0219@gmail.com"
+    email_from: str = "example@gmail.com"
     email_password: str = ""
     frontend_origin: str = "https://ssu-mails.pages.dev"
 
