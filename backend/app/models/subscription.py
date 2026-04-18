@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy import BigInteger, String, ForeignKey, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
@@ -10,6 +12,7 @@ class Subscriber(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    unsub_token: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
 
     subscriptions: Mapped[list["Subscription"]] = relationship(back_populates="subscriber")

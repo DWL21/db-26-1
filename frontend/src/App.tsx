@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
-import EmailSubscriptionForm from './EmailSubscriptionForm';
 
 const FLOOR_2_MAX_ROW = 6;
 
@@ -327,7 +326,7 @@ interface ChapelResponse {
 function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+
   const [userId, setUserId]     = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError]   = useState<string | null>(null);
@@ -531,7 +530,7 @@ return (
         <div className="header-action" style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 className="title" style={{ margin: 0, color: theme.ssuBlue }}>숭실대학교 채플 정보</h1>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn-icon" onClick={() => setShowSubscriptionModal(true)} style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}>📧 구독</button>
+            <a href="https://ssu-mails.pages.dev" target="_blank" rel="noreferrer" className="btn-icon" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem', textDecoration: 'none' }}>📧 구독</a>
             {token && <button className="btn-icon" onClick={handleLogout}>로그아웃</button>}
           </div>
         </div>
@@ -792,17 +791,6 @@ return (
         </div>
       )}
 
-      {showSubscriptionModal && (
-        <div className="modal-overlay" onClick={() => setShowSubscriptionModal(false)}>
-          <div className="modal-panel glass-panel" onClick={e => e.stopPropagation()} style={{ backgroundColor: theme.panel, color: theme.text, maxWidth: '500px' }}>
-            <div className="modal-header">
-              <h2 className="modal-title" style={{ color: theme.ssuBlue }}></h2>
-              <button className="modal-close" onClick={() => setShowSubscriptionModal(false)} style={{ color: theme.text }}>✕</button>
-            </div>
-            <EmailSubscriptionForm isDarkMode={isDarkMode} onClose={() => setShowSubscriptionModal(false)} />
-          </div>
-        </div>
-      )}    
 
       {showPrivacyModal && <PrivacyPolicyModal onClose={() => setShowPrivacyModal(false)} />}
     </div>
