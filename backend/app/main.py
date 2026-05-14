@@ -12,11 +12,12 @@ from app.models.subscription import Subscriber, Subscription
 from app.routers import auth, subscription, notice, test_page
 
 try:
-    from app.scheuler import run_scheduler, _collect_and_send
+    from app.scheuler import run_scheduler, _collect_and_send, seed_existing_notices
 except Exception as e:
     logging.getLogger(__name__).warning("scheduler disabled: %s", e)
     run_scheduler = None
     _collect_and_send = None
+    seed_existing_notices = None
 
 app = FastAPI(title="ssu-chapel backend", version="0.1.0")
 
@@ -84,6 +85,16 @@ async def preview_email():
 @app.get("/health")
 async def health() -> JSONResponse:
     return JSONResponse({"status": "ok"})
+
+
+@app.on_event("startup")
+async def initial_seed():
+    if seed_existing_notices is None:
+        return
+    try:
+        await seed_existing_notices()
+    except Exception:
+        logging.getLogger(__name__).exception("초기 seed 실패 — 첫 cron 시 누적분 발송 가능성 있음")
 
 
 @app.on_event("startup")

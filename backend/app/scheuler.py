@@ -160,6 +160,46 @@ async def _collect_and_send():
             )
 
 
+ALL_CATEGORIES = [
+    "전체", "학사", "장학", "국제교류", "외국인유학생",
+    "채용", "비교과·행사", "교원채용", "교직", "봉사", "기타",
+]
+
+
+async def seed_existing_notices() -> None:
+    """부팅 시 1회 — 현재 page=1의 link을 notices에 사전 저장하여
+    첫 cron 시점의 누적분 폭주 발송을 차단한다. 메일 발송은 하지 않는다."""
+    async with AsyncSessionLocal() as db:
+        all_links: set[str] = set()
+        for category in ALL_CATEGORIES:
+            cat_param = "" if category == "전체" else category
+            try:
+                notices = await fetch_notices_from_crawler(page=1, category=cat_param)
+            except Exception:
+                logger.exception("seed 크롤 실패: %s", category)
+                continue
+            for n in notices:
+                if n.get("link"):
+                    all_links.add(n["link"])
+
+        if not all_links:
+            logger.info("seed: 크롤 결과 없음")
+            return
+
+        result = await db.execute(select(Notice.link).where(Notice.link.in_(all_links)))
+        existing = set(result.scalars().all())
+        new_links = all_links - existing
+
+        if not new_links:
+            logger.info("seed: 모두 기존 link, 신규 저장 없음")
+            return
+
+        for link in new_links:
+            db.add(Notice(link=link))
+        await db.commit()
+        logger.info("seed 완료: %d 신규 link 저장", len(new_links))
+
+
 def _job():
     asyncio.run(_collect_and_send())
 

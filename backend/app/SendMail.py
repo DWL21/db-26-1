@@ -1,6 +1,7 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 import os
 from dotenv import load_dotenv
 
@@ -19,13 +20,14 @@ def send_email(to_email: str, subject: str, body: str = "", html_body: str = "")
     smtp_port = int(os.getenv("SMTP_PORT", 587))
     smtp_user = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
+    from_name = os.getenv("SMTP_FROM_NAME", "숭실 매일메일")
 
     if not smtp_user or not smtp_password:
         raise ValueError("SMTP_USER and SMTP_PASSWORD environment variables are required")
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = smtp_user
+    msg["From"] = formataddr((from_name, smtp_user), charset="utf-8")
     msg["To"] = to_email
 
     if body:
