@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     cron_secret: str = ""
+    frontend_origin: str = "https://ssu-mails.pages.dev"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
