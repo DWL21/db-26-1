@@ -75,8 +75,8 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      EMAIL_FROM: ${EMAIL_FROM}
-      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-https://ssu-mails.pages.dev}
     depends_on:
       postgres:
