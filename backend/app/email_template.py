@@ -8,6 +8,7 @@ def _render_notice_card(notice: dict) -> str:
     category = notice.get("category", "")
     department = notice.get("department", "")
     title = notice.get("title", "")
+    notice_date = notice.get("date", "")
 
     link = notice.get("link", "#")
     if link and not link.startswith("http"):
@@ -34,6 +35,12 @@ def _render_notice_card(notice: dict) -> str:
         if department else ""
     )
 
+    # 날짜
+    date_html = (
+        f'<span style="font-size:11px;color:#bbb;margin-left:6px;">{notice_date}</span>'
+        if notice_date else ""
+    )
+
     return f"""
     <tr>
       <td style="padding:0 0 8px 0;">
@@ -42,7 +49,7 @@ def _render_notice_card(notice: dict) -> str:
           <tr>
             <td style="padding:12px 16px;">
               <div style="margin-bottom:6px;">
-                {status_html}{category_html}{dept_html}
+                {status_html}{category_html}{dept_html}{date_html}
               </div>
               <a href="{link}" style="color:#333;text-decoration:none;font-size:14px;line-height:1.4;word-break:break-word;">
                 {title}
