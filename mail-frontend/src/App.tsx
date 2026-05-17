@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import UnsubscribePage from './UnsubscribePage';
 import PrivacyPage from './PrivacyPage';
 import TermsPage from './TermsPage';
@@ -315,34 +315,14 @@ function StepCode({
   setCode: (c: string[]) => void;
   onEditEmail: () => void;
 }) {
-  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const value = code.join('');
 
-  const set = (i: number, v: string) => {
-    const digit = v.replace(/\D/g, '').slice(-1);
-    const next = [...code];
-    next[i] = digit;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
+    const next = ['', '', '', '', '', ''];
+    for (let i = 0; i < digits.length; i++) next[i] = digits[i];
     setCode(next);
-    if (digit && i < 5) refs.current[i + 1]?.focus();
   };
-
-  const onKey = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !code[i] && i > 0) refs.current[i - 1]?.focus();
-    else if (e.key === 'ArrowLeft' && i > 0) refs.current[i - 1]?.focus();
-    else if (e.key === 'ArrowRight' && i < 5) refs.current[i + 1]?.focus();
-  };
-
-  const onPaste = (e: React.ClipboardEvent) => {
-    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (text.length > 0) {
-      e.preventDefault();
-      const next = ['', '', '', '', '', ''];
-      for (let i = 0; i < text.length; i++) next[i] = text[i];
-      setCode(next);
-      refs.current[Math.min(text.length, 5)]?.focus();
-    }
-  };
-
-  useEffect(() => { refs.current[0]?.focus(); }, []);
 
   return (
     <>
@@ -356,15 +336,20 @@ function StepCode({
         <button className="recap__edit" onClick={onEditEmail}>변경</button>
       </div>
       <div className="field">
-        <label className="field__label">인증번호 6자리</label>
-        <div className="code-input" onPaste={onPaste}>
-          {code.map((d, i) => (
-            <input key={i} ref={el => { refs.current[i] = el; }} type="text"
-              inputMode="numeric" maxLength={1} value={d} placeholder="–"
-              onChange={e => set(i, e.target.value)} onKeyDown={e => onKey(i, e)}
-              aria-label={`인증번호 ${i + 1}번째 자리`} />
-          ))}
-        </div>
+        <label className="field__label" htmlFor="codeInput">인증번호 6자리</label>
+        <input
+          id="codeInput"
+          className="input"
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          value={value}
+          placeholder="인증번호 6자리 입력"
+          onChange={handleChange}
+          autoFocus
+          autoComplete="one-time-code"
+          spellCheck={false}
+        />
       </div>
     </>
   );
