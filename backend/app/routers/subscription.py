@@ -1,7 +1,7 @@
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,7 +47,7 @@ async def _get_or_create_subscriber(db: AsyncSession, email: str) -> Subscriber:
 
 
 @router.post("", response_model=SubscriptionResponse, status_code=201)
-async def subscribe(body: SubscribeRequest, db: AsyncSession = Depends(get_db)):
+async def subscribe(body: SubscribeRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     if not body.categories:
         raise HTTPException(status_code=400, detail="카테고리를 1개 이상 선택해주세요.")
 
@@ -73,6 +73,12 @@ async def subscribe(body: SubscribeRequest, db: AsyncSession = Depends(get_db)):
         select(Subscription.category).where(Subscription.subscriber_id == subscriber.id)
     )
     subscribed = list(result.scalars().all())
+
+    try:
+        from app.scheuler import send_now_to_subscriber
+        background_tasks.add_task(send_now_to_subscriber, subscriber.id, set(subscribed))
+    except Exception:
+        pass
 
     return SubscriptionResponse(email=email, subscribed_categories=subscribed)
 

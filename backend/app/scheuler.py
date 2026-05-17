@@ -200,6 +200,87 @@ async def seed_existing_notices() -> None:
         logger.info("seed 완료: %d 신규 link 저장", len(new_links))
 
 
+async def _fetch_notices_for_categories(categories: set[str]) -> list[dict]:
+    """카테고리별 현재 공지 크롤링 후 링크 기준 중복 제거하여 반환."""
+    seen: set[str] = set()
+    result: list[dict] = []
+    for cat in categories:
+        cat_param = "" if cat == "전체" else cat
+        try:
+            notices = await fetch_notices_from_crawler(page=1, category=cat_param)
+        except Exception:
+            logger.exception("크롤링 실패: %s", cat)
+            continue
+        for n in notices:
+            link = n.get("link")
+            if link and link not in seen:
+                seen.add(link)
+                result.append(n)
+    return result
+
+
+async def send_now_to_subscriber(subscriber_id: int, categories: set[str]) -> None:
+    """구독자에게 현재 공지사항을 즉시 1회 발송 (notices 테이블 갱신 없음)."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(Subscriber).where(Subscriber.id == subscriber_id)
+        )
+        subscriber = result.scalar_one_or_none()
+        if subscriber is None:
+            return
+
+    notices = await _fetch_notices_for_categories(categories)
+    if not notices:
+        logger.info("즉시 발송 스킵: 공지 없음 (%s)", subscriber.email)
+        return
+
+    today = date.today()
+    html = build_email_html(notices, target_date=today, unsub_token=subscriber.unsub_token)
+    subject = f"숭실대 공지사항 ({today.strftime('%Y.%m.%d')}) — {len(notices)}건"
+    try:
+        send_email(subscriber.email, subject, html_body=html)
+        logger.info("즉시 발송 완료: %s (%d건)", subscriber.email, len(notices))
+    except Exception:
+        logger.exception("즉시 발송 실패: %s", subscriber.email)
+
+
+async def resend_today_to_all() -> int:
+    """모든 구독자에게 현재 공지사항 강제 재발송. notices 테이블 갱신 없음. 반환: 발송 성공 수."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(Subscriber, Subscription.category)
+            .join(Subscription, Subscriber.id == Subscription.subscriber_id)
+        )
+        rows = result.all()
+
+    if not rows:
+        return 0
+
+    subscriber_map: dict[int, dict] = {}
+    for subscriber, category in rows:
+        if subscriber.id not in subscriber_map:
+            subscriber_map[subscriber.id] = {"subscriber": subscriber, "categories": set()}
+        subscriber_map[subscriber.id]["categories"].add(category)
+
+    sent = 0
+    for info in subscriber_map.values():
+        sub = info["subscriber"]
+        notices = await _fetch_notices_for_categories(info["categories"])
+        if not notices:
+            continue
+        today = date.today()
+        html = build_email_html(notices, target_date=today, unsub_token=sub.unsub_token)
+        subject = f"숭실대 공지사항 ({today.strftime('%Y.%m.%d')}) — {len(notices)}건"
+        try:
+            send_email(sub.email, subject, html_body=html)
+            sent += 1
+            logger.info("재발송 완료: %s (%d건)", sub.email, len(notices))
+        except Exception:
+            logger.exception("재발송 실패: %s", sub.email)
+
+    return sent
+
+
 def _job():
     asyncio.run(_collect_and_send())
 

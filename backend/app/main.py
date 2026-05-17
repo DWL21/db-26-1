@@ -12,12 +12,13 @@ from app.models.subscription import Subscriber, Subscription
 from app.routers import auth, subscription, notice, test_page
 
 try:
-    from app.scheuler import run_scheduler, _collect_and_send, seed_existing_notices
+    from app.scheuler import run_scheduler, _collect_and_send, seed_existing_notices, resend_today_to_all
 except Exception as e:
     logging.getLogger(__name__).warning("scheduler disabled: %s", e)
     run_scheduler = None
     _collect_and_send = None
     seed_existing_notices = None
+    resend_today_to_all = None
 
 app = FastAPI(title="ssu-chapel backend", version="0.1.0")
 
@@ -64,6 +65,16 @@ async def run_cron(x_cron_secret: str = Header(default="")):
         raise HTTPException(503, "스케줄러 모듈 로드 실패")
     await _collect_and_send()
     return {"ok": True, "message": "Cron 실행 완료"}
+
+
+@app.post("/admin/resend-today")
+async def resend_today(x_cron_secret: str = Header(default="")):
+    if not settings.cron_secret or x_cron_secret != settings.cron_secret:
+        raise HTTPException(401, "인증 실패")
+    if resend_today_to_all is None:
+        raise HTTPException(503, "스케줄러 모듈 로드 실패")
+    count = await resend_today_to_all()
+    return {"ok": True, "sent": count}
 
 
 @app.get("/admin/preview-email")
