@@ -28,7 +28,7 @@ jobs:
         run: npm run build
         working-directory: mail-frontend
         env:
-          VITE_API_BASE: https://ssu-mail.simplyimg.com
+          VITE_API_BASE: https://ssu-mail-api.simplyimg.com
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy dist --project-name ssu-mails --commit-dirty=true
