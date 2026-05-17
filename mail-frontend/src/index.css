@@ -1143,6 +1143,114 @@ body {
 .btn-hero-cta:hover .btn__arrow { transform: translateX(3px); }
 .btn-hero-cta .btn__arrow { transition: transform 150ms ease; }
 
+/* ─── Email preview — matches actual backend template ───────── */
+.mail__email-wrap {
+  overflow-y: auto;
+  max-height: 540px;
+  background: #f5f5f5;
+  font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+
+.mail__email-header {
+  background: #4ec6c1;
+  padding: 20px;
+  border-radius: 0;
+}
+.mail__email-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.mail__email-meta {
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+}
+
+.mail__email-body {
+  background: #f9fafb;
+  padding: 12px;
+  border-left: 1px solid #e8e8e8;
+  border-right: 1px solid #e8e8e8;
+  min-height: 80px;
+}
+
+.mail__notice-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+.mail__notice-card:last-child { margin-bottom: 0; }
+
+.mail__notice-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.mail__notice-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 3px;
+}
+.mail__notice-badge--active   { background: #4ec6c1; color: #fff; }
+.mail__notice-badge--closed   { background: #e74c3c; color: #fff; }
+.mail__notice-badge--category { border: 1px solid #ddd; color: #888; background: transparent; font-weight: 400; }
+
+.mail__notice-dept {
+  font-size: 12px;
+  color: #999;
+}
+
+.mail__notice-title {
+  font-size: 13.5px;
+  color: #333;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.mail__email-footer {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-top: none;
+  padding: 16px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.mail__email-btn {
+  display: inline-block;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4ec6c1;
+  border: 1px solid #4ec6c1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.mail__email-footer p {
+  font-size: 11px;
+  color: #bbb;
+  margin: 0;
+}
+
+.mail__email-unsub {
+  font-size: 11px;
+  color: #bbb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* ─── Subscribe page (full-page dark section) ────────────── */
 .subscribe-page {
   background: var(--ink);

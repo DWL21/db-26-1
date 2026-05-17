@@ -17,46 +17,53 @@ const CATEGORIES = [
   { value: '기타',         hint: '그 외' },
 ];
 
-const SAMPLE_NOTICES: Record<string, { t: string; d: string }[]> = {
+interface NoticeItem {
+  status: string;
+  category: string;
+  department: string;
+  title: string;
+}
+
+const SAMPLE_NOTICES: Record<string, NoticeItem[]> = {
   '학사': [
-    { t: '2026학년도 1학기 수강신청 일정 안내', d: '05.16' },
-    { t: '성적 정정 기간 및 절차 공고', d: '05.16' },
-    { t: '조기졸업 신청 마감 안내', d: '05.15' },
+    { status: '진행', category: '학사', department: '교무처', title: '2026학년도 1학기 수강신청 일정 안내' },
+    { status: '진행', category: '학사', department: '교무처', title: '성적 정정 기간 및 절차 공고' },
+    { status: '마감', category: '학사', department: '학생처', title: '조기졸업 신청 마감 안내' },
   ],
   '장학': [
-    { t: '2026-1 국가장학금 2차 신청 마감 (~5/20)', d: '05.16' },
-    { t: '교내 우수장학생 추천 모집', d: '05.15' },
+    { status: '진행', category: '장학', department: '장학팀', title: '2026-1 국가장학금 2차 신청 마감 (~5/20)' },
+    { status: '진행', category: '장학', department: '대외협력팀', title: '교내 우수장학생 추천 모집' },
   ],
   '국제교류': [
-    { t: '2026 봄학기 교환학생 모집 공고', d: '05.16' },
-    { t: '어학연수 프로그램 설명회 안내', d: '05.14' },
+    { status: '진행', category: '국제교류', department: '국제처', title: '2026 봄학기 교환학생 모집 공고' },
+    { status: '진행', category: '국제교류', department: '국제처', title: '어학연수 프로그램 설명회 안내' },
   ],
   '외국인유학생': [
-    { t: '외국인 유학생 비자 연장 안내', d: '05.16' },
-    { t: '한국어 도우미 프로그램 신청', d: '05.14' },
+    { status: '진행', category: '외국인유학생', department: '국제학생팀', title: '외국인 유학생 비자 연장 안내' },
+    { status: '진행', category: '외국인유학생', department: '국제학생팀', title: '한국어 도우미 프로그램 신청' },
   ],
   '채용': [
-    { t: '삼성전자 DS부문 신입 채용설명회 (5/22 오후 2시)', d: '05.16' },
-    { t: '현대자동차 R&D 인턴 모집 공고', d: '05.15' },
-    { t: '취업 동아리 SCBP 신규 부원 모집', d: '05.15' },
+    { status: '진행', category: '채용', department: '취업지원팀', title: '삼성전자 DS부문 신입 채용설명회 (5/22 오후 2시)' },
+    { status: '진행', category: '채용', department: '취업지원팀', title: '현대자동차 R&D 인턴 모집 공고' },
+    { status: '마감', category: '채용', department: '학생처', title: '취업 동아리 SCBP 신규 부원 모집' },
   ],
   '비교과·행사': [
-    { t: '총장 초청 봄 콘서트 (5/24)', d: '05.16' },
-    { t: '독서마라톤 5월 챌린지 시작', d: '05.13' },
+    { status: '진행', category: '비교과·행사', department: '학생문화팀', title: '총장 초청 봄 콘서트 (5/24)' },
+    { status: '진행', category: '비교과·행사', department: '도서관', title: '독서마라톤 5월 챌린지 시작' },
   ],
   '교원채용': [
-    { t: '2026학년도 1학기 전임교원 공개채용 공고', d: '05.15' },
+    { status: '진행', category: '교원채용', department: '인사팀', title: '2026학년도 1학기 전임교원 공개채용 공고' },
   ],
   '교직': [
-    { t: '교원자격증 발급 신청 안내', d: '05.14' },
+    { status: '진행', category: '교직', department: '교직과', title: '교원자격증 발급 신청 안내' },
   ],
   '봉사': [
-    { t: '1365 자원봉사 정기 활동 모집', d: '05.16' },
-    { t: '지역 아동센터 학습 멘토링 봉사자 모집', d: '05.13' },
+    { status: '진행', category: '봉사', department: '사회봉사팀', title: '1365 자원봉사 정기 활동 모집' },
+    { status: '진행', category: '봉사', department: '사회봉사팀', title: '지역 아동센터 학습 멘토링 봉사자 모집' },
   ],
   '기타': [
-    { t: '학내 셔틀버스 운행 시간표 변경', d: '05.16' },
-    { t: '도서관 휴관 안내', d: '05.15' },
+    { status: '',     category: '기타', department: '총무처', title: '학내 셔틀버스 운행 시간표 변경' },
+    { status: '',     category: '기타', department: '도서관', title: '도서관 휴관 안내' },
   ],
 };
 
@@ -230,7 +237,7 @@ function HowItWorks() {
     {
       n: '03',
       title: '인증 한 번으로 구독 완료',
-      body: '6자리 인증번호를 확인하면 끝. 그 이후엔 매일 09시, 새 공지가 자동으로 도착합니다.',
+      body: '6자리 인증번호를 확인하면 끝. 그 이후엔 매일 08시, 새 공지가 자동으로 도착합니다.',
     },
   ];
   return (
@@ -239,8 +246,7 @@ function HowItWorks() {
         <div className="section__head">
           <div className="section__label">How it works</div>
           <h2 className="section__title">
-            구독까지 세 단계면 됩니다.<br />
-            <em>이후엔 매일 09시.</em>
+            구독까지 세 단계면 됩니다.
           </h2>
         </div>
         <div className="how">
@@ -342,7 +348,7 @@ function StepEmail({
         <h3 className="form-card__title">어디로 보내드릴까요?</h3>
       </div>
       <p className="form-card__sub">
-        선택한 카테고리 {selectedCount}개의 공지를 매일 09:00 이 주소로 보내드립니다.
+        선택한 카테고리 {selectedCount}개의 공지를 매일 08:00 이 주소로 보내드립니다.
       </p>
       <div className="field">
         <label className="field__label" htmlFor="emailInput">이메일 주소</label>
@@ -444,7 +450,7 @@ function StepDone({ email, count }: { email: string; count: number }) {
       <div className="success__mark">✻</div>
       <h3 className="success__title">구독이 완료되었습니다</h3>
       <p className="success__sub">
-        내일 아침 09:00, <strong>{email}</strong>로<br />
+        내일 아침 08:00, <strong>{email}</strong>로<br />
         선택하신 {count}개 카테고리의 공지가 도착합니다.
       </p>
       <div className="success__meta">
@@ -454,67 +460,67 @@ function StepDone({ email, count }: { email: string; count: number }) {
   );
 }
 
-function MailPreview({ selected, email }: { selected: string[]; email: string }) {
+function MailPreview({ selected }: { selected: string[] }) {
   const items = useMemo(
-    () => selected.flatMap(cat => (SAMPLE_NOTICES[cat] || []).map(n => ({ ...n, cat }))),
+    () => selected.flatMap(cat => (SAMPLE_NOTICES[cat] || []).map(n => ({ ...n }))),
     [selected]
   );
-  const byCat = useMemo(() => {
-    const out: Record<string, typeof items> = {};
-    for (const it of items) (out[it.cat] = out[it.cat] || []).push(it);
-    return out;
-  }, [items]);
 
   return (
     <div className="mail">
+      {/* Browser chrome */}
       <div className="mail__chrome">
         <div className="mail__chrome-left">
           <span className="mail__dot" />
           <span className="mail__dot" />
           <span className="mail__dot" />
         </div>
-        <div className="mail__chrome-right">받은편지함 · 매일 09:00</div>
+        <div className="mail__chrome-right">받은편지함 · 매일 08:00</div>
       </div>
-      <div className="mail__head">
-        <div className="mail__date">{todayLabel()} · 09:00</div>
-        <h3 className="mail__subject">
-          {selected.length === 0
-            ? <><em>오늘의</em> 숭실대 공지 요약</>
-            : <>오늘의 숭실대 공지 <em>·</em> {items.length}건</>
-          }
-        </h3>
-      </div>
-      <div className="mail__body">
-        <p className="mail__intro">
-          {email ? <strong>{email.split('@')[0]}</strong> : '안녕하세요'}님, 오늘 새로 올라온 공지를 정리했습니다.
-        </p>
-        {selected.length === 0 ? (
-          <div className="mail__empty">
-            <span>✻</span>
-            <p>카테고리를 선택하면<br />메일 미리보기가 채워집니다.</p>
+
+      <div className="mail__email-wrap">
+        {/* 이메일 헤더 — 실제 템플릿의 teal 헤더와 동일 */}
+        <div className="mail__email-header">
+          <div className="mail__email-title">숭실대학교 공지사항</div>
+          <div className="mail__email-meta">
+            {todayLabel()} · 새 공지 {items.length}건
           </div>
-        ) : (
-          Object.entries(byCat).map(([cat, list]) => (
-            <div className="mail__section" key={cat}>
-              <h4 className="mail__section-title">
-                {cat}
-                <span className="mail__section-count">{String(list.length).padStart(2, '0')}</span>
-              </h4>
-              <ul className="mail__list">
-                {list.map((n, i) => (
-                  <li className="mail__item" key={i}>
-                    <span className="mail__item-num">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="mail__item-title">{n.t}</span>
-                    <span className="mail__item-meta">{n.d}</span>
-                  </li>
-                ))}
-              </ul>
+        </div>
+
+        {/* 공지 카드 목록 */}
+        <div className="mail__email-body">
+          {selected.length === 0 ? (
+            <div className="mail__empty">
+              <span>✻</span>
+              <p>카테고리를 선택하면<br />메일 미리보기가 채워집니다.</p>
             </div>
-          ))
-        )}
-      </div>
-      <div className="mail__footer">
-        숭실메일 (ssu-mail) — 숭실대학교 비공식 공지 메일링 · <a href="#">구독 해제</a>
+          ) : (
+            items.map((n, i) => (
+              <div className="mail__notice-card" key={i}>
+                <div className="mail__notice-badges">
+                  {n.status === '진행' && (
+                    <span className="mail__notice-badge mail__notice-badge--active">진행</span>
+                  )}
+                  {n.status === '마감' && (
+                    <span className="mail__notice-badge mail__notice-badge--closed">마감</span>
+                  )}
+                  <span className="mail__notice-badge mail__notice-badge--category">{n.category}</span>
+                  {n.department && (
+                    <span className="mail__notice-dept">{n.department}</span>
+                  )}
+                </div>
+                <div className="mail__notice-title">{n.title}</div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* 푸터 */}
+        <div className="mail__email-footer">
+          <span className="mail__email-btn">전체 공지사항 보기</span>
+          <p>본 메일은 숭실대학교 공지사항 구독 서비스에 의해 자동 발송되었습니다.</p>
+          <span className="mail__email-unsub">구독 해지</span>
+        </div>
       </div>
     </div>
   );
@@ -629,7 +635,7 @@ function SubscribeSection() {
           </div>
 
           <div className="preview">
-            <MailPreview selected={selected} email={email} />
+            <MailPreview selected={selected} />
           </div>
         </div>
       </div>
