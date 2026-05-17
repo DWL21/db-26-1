@@ -41,14 +41,6 @@ services:
     networks:
       - internal
 
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - letsencrypt:/etc/letsencrypt
-      - certbot-webroot:/var/www/certbot
-    networks:
-      - internal
-
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -59,7 +51,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "${TAILSCALE_IP}:5432:5432"  # Tailscale IP (tailscale ip -4)
+      - "${TAILSCALE_IP}:5432:5432"
     networks:
       - internal
     healthcheck:
@@ -77,7 +69,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
-      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-https://ssu-mails.pages.dev}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-https://ssu-mail.simplyimg.com}
       CRON_SECRET: ${CRON_SECRET}
     depends_on:
       postgres:
@@ -85,19 +77,13 @@ services:
     networks:
       - internal
 
-  nginx:
-    image: ghcr.io/dwl21/ssu-chapel/nginx:latest
-    build:
-      context: ./nginx
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - letsencrypt:/etc/letsencrypt:ro
-      - certbot-webroot:/var/www/certbot
     depends_on:
-      - worker
       - backend
     networks:
       - internal
@@ -109,6 +95,4 @@ networks:
 
 volumes:
   redis-data:
-  certbot-webroot:
-  letsencrypt:
   postgres-data:

@@ -5,9 +5,7 @@ services:
     profiles: ["full"]
   webdis:
     profiles: ["full"]
-  certbot:
-    profiles: ["full"]
-  nginx:
+  cloudflared:
     profiles: ["full"]
 
   postgres:
