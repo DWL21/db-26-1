@@ -1,5 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import UnsubscribePage from './UnsubscribePage';
+import PrivacyPage from './PrivacyPage';
+import TermsPage from './TermsPage';
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8001';
 
@@ -609,8 +611,8 @@ function Footer() {
             <div className="foot__col">
               <h4 className="foot__col-title">Legal</h4>
               <ul>
-                <li><a href="#">개인정보 처리방침</a></li>
-                <li><a href="#">이용약관</a></li>
+                <li><a href="#/privacy">개인정보 처리방침</a></li>
+                <li><a href="#/terms">이용약관</a></li>
               </ul>
             </div>
             <div className="foot__col">
@@ -632,11 +634,22 @@ function Footer() {
 }
 
 /* ───────── App ──────────────────────────────────────────── */
+function getHash() {
+  return window.location.hash.replace(/^#\/?/, '') || '';
+}
+
 export default function App() {
   const unsubscribeToken = useMemo(
     () => new URLSearchParams(window.location.search).get('unsubscribe'),
     []
   );
+
+  const [hash, setHash] = useState(getHash);
+  useEffect(() => {
+    const handler = () => setHash(getHash());
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
 
   if (unsubscribeToken) {
     return (
@@ -647,6 +660,9 @@ export default function App() {
       </div>
     );
   }
+
+  if (hash === 'privacy') return <PrivacyPage />;
+  if (hash === 'terms') return <TermsPage />;
 
   return (
     <>
