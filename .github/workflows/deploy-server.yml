@@ -108,7 +108,7 @@ jobs:
           set -e
           cd "${{ vars.DEPLOY_PATH }}"
           echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker compose pull worker backend
-          docker compose up -d --no-build
+          docker compose -f docker-compose.yml pull worker backend
+          docker compose -f docker-compose.yml up -d --no-build
           docker image prune -f
           ENDSSH
