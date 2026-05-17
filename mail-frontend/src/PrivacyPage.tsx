@@ -64,7 +64,7 @@ export default function PrivacyPage() {
           <h2>7. 개인정보 보호책임자</h2>
           <table className="legal-page__table">
             <tbody>
-              <tr><td>이메일</td><td>leopold.urssu@gmail.com</td></tr>
+              <tr><td>이메일</td><td>nggus5@gmail.com</td></tr>
               <tr><td>처리 기간</td><td>요청일로부터 3일 이내</td></tr>
             </tbody>
           </table>

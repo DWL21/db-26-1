@@ -88,7 +88,7 @@ export default function TermsPage() {
           <p>약관에 관한 문의는 아래로 연락해 주십시오.</p>
           <table className="legal-page__table">
             <tbody>
-              <tr><td>이메일</td><td>leopold.urssu@gmail.com</td></tr>
+              <tr><td>이메일</td><td>nggus5@gmail.com</td></tr>
             </tbody>
           </table>
         </div>
