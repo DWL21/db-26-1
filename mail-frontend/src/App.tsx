@@ -78,6 +78,13 @@ function nextNineCountdown() {
   return `${h}시간 ${m}분`;
 }
 
+/* ───────── Routing ──────────────────────────────────────── */
+type Route = 'home' | 'subscribe';
+
+function getRoute(): Route {
+  return window.location.hash.startsWith('#/subscribe') ? 'subscribe' : 'home';
+}
+
 /* ───────── Icon components ──────────────────────────────── */
 function Arrow({ flip = false }: { flip?: boolean }) {
   return (
@@ -103,7 +110,7 @@ function Header() {
   return (
     <header className="site-header">
       <div className="wrap site-header__row">
-        <a className="brand" href="#top">
+        <a className="brand" href="#/">
           <span className="brand__word">숭실메일</span>
           <span className="brand__dot" />
           <span className="brand__sub">ssu-mail</span>
@@ -111,14 +118,28 @@ function Header() {
         <nav className="site-nav">
           <span className="site-nav__links" style={{ display: 'inline-flex', gap: 28 }}>
             <a href="#how">소개</a>
-            <a href="#subscribe">구독</a>
+            <a href="#subscribe-section">구독</a>
             <a href="#faq">FAQ</a>
           </span>
-          <a className="site-nav__back" href="https://ssu-chapel.pages.dev/?utm_source=ssu-mails&utm_campaign=cross_link">
-            <Arrow flip />
-            채플로 돌아가기
-          </a>
         </nav>
+      </div>
+    </header>
+  );
+}
+
+function SubscribeHeader() {
+  return (
+    <header className="site-header">
+      <div className="wrap site-header__row">
+        <a className="brand" href="#/">
+          <span className="brand__word">숭실메일</span>
+          <span className="brand__dot" />
+          <span className="brand__sub">ssu-mail</span>
+        </a>
+        <a className="site-nav__back" href="#/">
+          <Arrow flip />
+          돌아가기
+        </a>
       </div>
     </header>
   );
@@ -131,10 +152,6 @@ function HeroMailMock() {
       <div className="mailmock__head">
         <div className="mailmock__head-left">
           <div className="mailmock__avatar">숭</div>
-          <div>
-            <div className="mailmock__sender">숭실메일</div>
-            <div className="mailmock__sender-sub">ssu-mail · 수신함</div>
-          </div>
         </div>
         <div className="mailmock__time">{todayLabel()} · 09:00</div>
       </div>
@@ -173,20 +190,23 @@ function HeroMailMock() {
   );
 }
 
-function Hero() {
+function Hero({ onSubscribe }: { onSubscribe: () => void }) {
   return (
     <section className="hero" id="top">
       <div className="wrap hero__grid">
         <div>
           <div className="eyebrow hero__eyebrow">숭실메일 · ssu-mail</div>
           <h1 className="hero__title">
-            놓치기엔 너무 중요한 공지를,{' '}
+            놓치기엔 너무 중요한 공지를,<br />
             <em>한 통의 메일</em>로.
           </h1>
           <p className="hero__lede">
             장학금 마감, 수강신청, 채용 공고까지 — 흩어진 학교 공지를
             카테고리별로 골라 매일 아침 09시 한 번에 정리해 보내드립니다.
           </p>
+          <button className="btn-hero-cta" onClick={onSubscribe}>
+            구독하기 <Arrow />
+          </button>
         </div>
         <HeroMailMock />
       </div>
@@ -200,17 +220,17 @@ function HowItWorks() {
     {
       n: '01',
       title: '관심 카테고리를 고릅니다',
-      body: '학사·장학부터 채용·봉사까지 10개 카테고리 중 보고 싶은 것만 골라 담아요. 칩을 눌러 자유롭게 선택합니다.',
+      body: '학사·장학부터 채용·봉사까지 10개 카테고리 중 보고 싶은 것만 골라 담아요.',
     },
     {
       n: '02',
-      title: '수신할 이메일을 입력합니다',
+      title: '이메일 주소를 입력합니다',
       body: '받아볼 메일 주소를 알려주세요. 학교 메일도 개인 메일도 모두 가능합니다.',
     },
     {
       n: '03',
-      title: '인증 후 구독 완료',
-      body: '6자리 인증번호를 확인하면 끝. 매일 아침 9시, 선택한 카테고리의 새 공지가 도착합니다.',
+      title: '인증 한 번으로 구독 완료',
+      body: '6자리 인증번호를 확인하면 끝. 그 이후엔 매일 09시, 새 공지가 자동으로 도착합니다.',
     },
   ];
   return (
@@ -219,8 +239,8 @@ function HowItWorks() {
         <div className="section__head">
           <div className="section__label">How it works</div>
           <h2 className="section__title">
-            세 걸음이면 충분합니다.<br />
-            <em>그 뒤로는 매일 아침,</em>
+            구독까지 세 단계면 됩니다.<br />
+            <em>이후엔 매일 09시.</em>
           </h2>
         </div>
         <div className="how">
@@ -237,7 +257,7 @@ function HowItWorks() {
   );
 }
 
-/* ───────── Subscribe flow ───────────────────────────────── */
+/* ───────── Subscribe flow (separate page) ───────────────── */
 function Stepper({ step, onJump }: { step: number; onJump: (n: number) => void }) {
   const items = [
     { n: 1, label: '카테고리' },
@@ -278,7 +298,7 @@ function StepCategories({
       <div className="form-card__head">
         <h3 className="form-card__title">어떤 공지를 받을까요?</h3>
       </div>
-      <p className="form-card__sub">보고 싶은 카테고리를 골라주세요. 나중에 언제든지 바꿀 수 있어요.</p>
+      <p className="form-card__sub">보고 싶은 카테고리를 골라주세요. 언제든지 변경할 수 있습니다.</p>
       <div className="chips__actions">
         <span className="chips__count">
           {String(selected.length).padStart(2, '0')} / 10 선택됨
@@ -322,7 +342,7 @@ function StepEmail({
         <h3 className="form-card__title">어디로 보내드릴까요?</h3>
       </div>
       <p className="form-card__sub">
-        선택한 카테고리 {selectedCount}개의 새 공지를 매일 09:00 이 주소로 보내드립니다.
+        선택한 카테고리 {selectedCount}개의 공지를 매일 09:00 이 주소로 보내드립니다.
       </p>
       <div className="field">
         <label className="field__label" htmlFor="emailInput">이메일 주소</label>
@@ -364,13 +384,9 @@ function StepCode({
   };
 
   const onKey = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !code[i] && i > 0) {
-      refs.current[i - 1]?.focus();
-    } else if (e.key === 'ArrowLeft' && i > 0) {
-      refs.current[i - 1]?.focus();
-    } else if (e.key === 'ArrowRight' && i < 5) {
-      refs.current[i + 1]?.focus();
-    }
+    if (e.key === 'Backspace' && !code[i] && i > 0) refs.current[i - 1]?.focus();
+    else if (e.key === 'ArrowLeft' && i > 0) refs.current[i - 1]?.focus();
+    else if (e.key === 'ArrowRight' && i < 5) refs.current[i + 1]?.focus();
   };
 
   const onPaste = (e: React.ClipboardEvent) => {
@@ -392,7 +408,7 @@ function StepCode({
         <h3 className="form-card__title">인증번호를 확인해주세요</h3>
       </div>
       <p className="form-card__sub">
-        방금 발송된 6자리 인증번호를 입력해주세요. (최대 5분 소요, 스팸함 확인)
+        발송된 6자리 인증번호를 입력해주세요. 스팸함도 확인해보세요. (최대 5분 소요)
       </p>
       <div className="recap">
         <span className="recap__label">To</span>
@@ -429,7 +445,7 @@ function StepDone({ email, count }: { email: string; count: number }) {
       <h3 className="success__title">구독이 완료되었습니다</h3>
       <p className="success__sub">
         내일 아침 09:00, <strong>{email}</strong>로<br />
-        선택하신 {count}개 카테고리의 새 공지가 도착합니다.
+        선택하신 {count}개 카테고리의 공지가 도착합니다.
       </p>
       <div className="success__meta">
         {todayLabel()} · 첫 메일까지 약 <span style={{ marginLeft: 4 }}>{nextNineCountdown()}</span>
@@ -443,7 +459,6 @@ function MailPreview({ selected, email }: { selected: string[]; email: string })
     () => selected.flatMap(cat => (SAMPLE_NOTICES[cat] || []).map(n => ({ ...n, cat }))),
     [selected]
   );
-
   const byCat = useMemo(() => {
     const out: Record<string, typeof items> = {};
     for (const it of items) (out[it.cat] = out[it.cat] || []).push(it);
@@ -463,21 +478,20 @@ function MailPreview({ selected, email }: { selected: string[]; email: string })
       <div className="mail__head">
         <div className="mail__date">{todayLabel()} · 09:00</div>
         <h3 className="mail__subject">
-          {selected.length === 0 ? (
-            <><em>오늘의</em> 숭실대 공지 요약</>
-          ) : (
-            <>오늘의 숭실대 공지 <em>·</em> {items.length}건</>
-          )}
+          {selected.length === 0
+            ? <><em>오늘의</em> 숭실대 공지 요약</>
+            : <>오늘의 숭실대 공지 <em>·</em> {items.length}건</>
+          }
         </h3>
       </div>
       <div className="mail__body">
         <p className="mail__intro">
-          {email ? <strong>{email.split('@')[0]}</strong> : '안녕하세요'}님, 오늘 새로 올라온 공지를 한 번에 정리했습니다.
+          {email ? <strong>{email.split('@')[0]}</strong> : '안녕하세요'}님, 오늘 새로 올라온 공지를 정리했습니다.
         </p>
         {selected.length === 0 ? (
           <div className="mail__empty">
             <span>✻</span>
-            <p>왼쪽에서 카테고리를 골라보세요.<br />선택한 항목에 맞춰 메일이 채워집니다.</p>
+            <p>카테고리를 선택하면<br />메일 미리보기가 채워집니다.</p>
           </div>
         ) : (
           Object.entries(byCat).map(([cat, list]) => (
@@ -500,13 +514,13 @@ function MailPreview({ selected, email }: { selected: string[]; email: string })
         )}
       </div>
       <div className="mail__footer">
-        숭실메일 (ssu-mail) — 숭실대학교 비공식 공지 메일링 · <a href="#">구독 해제</a> · <a href="#">설정 변경</a>
+        숭실메일 (ssu-mail) — 숭실대학교 비공식 공지 메일링 · <a href="#">구독 해제</a>
       </div>
     </div>
   );
 }
 
-function Subscribe() {
+function SubscribeSection() {
   const [step, setStep] = useState(1);
   const [selected, setSelected] = useState<string[]>([]);
   const [email, setEmail] = useState('');
@@ -518,31 +532,21 @@ function Subscribe() {
     setSelected(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
     setError(null);
   };
-
   const selectAll = () =>
     setSelected(selected.length === CATEGORIES.length ? [] : CATEGORIES.map(c => c.value));
 
-  const goBack = () => {
-    setError(null);
-    if (step > 1) setStep(step - 1);
-  };
-
-  const goStep = (n: number) => {
-    if (n < step) { setError(null); setStep(n); }
-  };
+  const goBack = () => { setError(null); if (step > 1) setStep(step - 1); };
+  const goStep = (n: number) => { if (n < step) { setError(null); setStep(n); } };
 
   const goNext = async () => {
     setError(null);
-
     if (step === 1) {
-      if (selected.length === 0) {
-        setError('구독할 카테고리를 1개 이상 골라주세요.');
-        return;
-      }
+      if (selected.length === 0) { setError('구독할 카테고리를 1개 이상 골라주세요.'); return; }
       setStep(2);
     } else if (step === 2) {
-      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-      if (!ok) { setError('올바른 이메일 형식이 아닙니다.'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setError('올바른 이메일 형식이 아닙니다.'); return;
+      }
       setLoading(true);
       try {
         const res = await fetch(`${API_BASE}/auth/request-code`, {
@@ -557,14 +561,9 @@ function Subscribe() {
         setStep(3);
       } catch (e) {
         setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     } else if (step === 3) {
-      if (code.join('').length !== 6) {
-        setError('6자리 인증번호를 모두 입력해주세요.');
-        return;
-      }
+      if (code.join('').length !== 6) { setError('6자리 인증번호를 모두 입력해주세요.'); return; }
       setLoading(true);
       try {
         const res = await fetch(`${API_BASE}/subscriptions`, {
@@ -579,39 +578,27 @@ function Subscribe() {
         setStep(4);
       } catch (e) {
         setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     }
   };
 
   return (
-    <section className="section subscribe" id="subscribe">
+    <section className="subscribe-page" id="subscribe-section">
       <div className="wrap">
         <div className="section__head">
           <div className="section__label">Subscribe</div>
-          <h2 className="section__title"><em>딱</em> 1분이면 됩니다.</h2>
+          <h2 className="section__title">
+            원하는 공지만,<br /><em>골라서 받으세요.</em>
+          </h2>
         </div>
 
         <div className="sub-grid">
           <div>
             <Stepper step={step} onJump={goStep} />
-
             <div className="form-card">
-              {step === 1 && (
-                <StepCategories selected={selected} toggleCat={toggleCat} selectAll={selectAll} />
-              )}
-              {step === 2 && (
-                <StepEmail email={email} setEmail={setEmail} selectedCount={selected.length} />
-              )}
-              {step === 3 && (
-                <StepCode
-                  email={email}
-                  code={code}
-                  setCode={setCode}
-                  onEditEmail={() => setStep(2)}
-                />
-              )}
+              {step === 1 && <StepCategories selected={selected} toggleCat={toggleCat} selectAll={selectAll} />}
+              {step === 2 && <StepEmail email={email} setEmail={setEmail} selectedCount={selected.length} />}
+              {step === 3 && <StepCode email={email} code={code} setCode={setCode} onEditEmail={() => setStep(2)} />}
               {step === 4 && <StepDone email={email} count={selected.length} />}
 
               {error && <div className="field-error">{error}</div>}
@@ -655,19 +642,19 @@ function FAQ() {
   const qs = [
     {
       q: '유료인가요?',
-      a: '아니요, 모두 무료입니다. 광고도, 트래킹 픽셀도 넣지 않습니다. 학내 공지를 더 쉽게 받아보자는 학생 사이드 프로젝트로 운영됩니다.',
+      a: '아니요, 완전히 무료입니다. 광고도, 트래킹 픽셀도 없습니다. 학내 공지를 더 편하게 받아보자는 학생 사이드 프로젝트입니다.',
     },
     {
-      q: '공식 채널인가요?',
-      a: '학교 공식 서비스는 아닙니다. 숭실대학교 홈페이지의 공개 공지를 크롤링해 정리해 보내드리며, 원문은 항상 메일 안의 링크에서 확인할 수 있습니다.',
+      q: '학교 공식 서비스인가요?',
+      a: '아닙니다. 숭실대학교 홈페이지의 공개 공지를 수집해 정리해 드리며, 원문은 메일 안의 링크에서 항상 확인할 수 있습니다.',
     },
     {
-      q: '구독을 해제하려면 어떻게 하나요?',
-      a: '모든 메일 하단의 \'구독 해제\' 링크 한 번이면 끝입니다. 별도 계정 가입이 없기 때문에 비밀번호도 필요하지 않습니다.',
+      q: '어떻게 구독을 해제하나요?',
+      a: '수신한 메일 하단의 구독 해제 링크를 누르면 즉시 해지됩니다. 별도 계정이 없으니 비밀번호도 필요하지 않습니다.',
     },
     {
-      q: '어떤 정보를 저장하나요?',
-      a: '메일 주소와 선택한 카테고리만 저장합니다. 학번이나 비밀번호는 저장하지 않으며, 발송 외 다른 용도로 사용하지 않습니다.',
+      q: '어떤 정보를 수집하나요?',
+      a: '이메일 주소와 선택한 카테고리만 저장합니다. 학번·비밀번호는 수집하지 않으며, 메일 발송 외의 용도로는 사용하지 않습니다.',
     },
   ];
   return (
@@ -675,7 +662,7 @@ function FAQ() {
       <div className="wrap">
         <div className="section__head">
           <div className="section__label">FAQ</div>
-          <h2 className="section__title">궁금할 만한 <em>네 가지</em>.</h2>
+          <h2 className="section__title">자주 묻는 <em>질문들.</em></h2>
         </div>
         <div className="faq">
           {qs.map((it, i) => (
@@ -708,7 +695,7 @@ function Footer() {
               <h4 className="foot__col-title">Product</h4>
               <ul>
                 <li><a href="#how">소개</a></li>
-                <li><a href="#subscribe">구독</a></li>
+                <li><a href="#/subscribe">구독하기</a></li>
                 <li><a href="#faq">FAQ</a></li>
               </ul>
             </div>
@@ -722,7 +709,7 @@ function Footer() {
             <div className="foot__col">
               <h4 className="foot__col-title">Project</h4>
               <ul>
-                <li><a href="https://ssu-chapel.pages.dev/?utm_source=ssu-mails&utm_campaign=cross_link">채플 정보로 돌아가기</a></li>
+                <li><a href="https://ssu-chapel.pages.dev/?utm_source=ssu-mails&utm_campaign=cross_link">채플 정보 조회</a></li>
                 <li><a href="https://github.com/DWL21/ssu-chapel">GitHub</a></li>
               </ul>
             </div>
@@ -737,12 +724,47 @@ function Footer() {
   );
 }
 
+/* ───────── Pages ────────────────────────────────────────── */
+function HomePage({ onSubscribe }: { onSubscribe: () => void }) {
+  return (
+    <>
+      <Header />
+      <Hero onSubscribe={onSubscribe} />
+      <HowItWorks />
+      <FAQ />
+      <Footer />
+    </>
+  );
+}
+
+function SubscribePage() {
+  return (
+    <>
+      <SubscribeHeader />
+      <SubscribeSection />
+    </>
+  );
+}
+
 /* ───────── App ──────────────────────────────────────────── */
 export default function App() {
   const unsubscribeToken = useMemo(
     () => new URLSearchParams(window.location.search).get('unsubscribe'),
     []
   );
+
+  const [route, setRoute] = useState<Route>(getRoute);
+
+  useEffect(() => {
+    const handler = () => setRoute(getRoute());
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
+
+  const navigate = (r: Route) => {
+    window.location.hash = r === 'home' ? '/' : '/subscribe';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   if (unsubscribeToken) {
     return (
@@ -754,14 +776,6 @@ export default function App() {
     );
   }
 
-  return (
-    <>
-      <Header />
-      <Hero />
-      <HowItWorks />
-      <Subscribe />
-      <FAQ />
-      <Footer />
-    </>
-  );
+  if (route === 'subscribe') return <SubscribePage />;
+  return <HomePage onSubscribe={() => navigate('subscribe')} />;
 }
