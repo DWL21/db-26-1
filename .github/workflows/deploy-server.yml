@@ -8,7 +8,6 @@ on:
       - 'backend/**'
       - 'rusaint-wasm/**'
       - 'rusaint/**'
-      - 'nginx/**'
       - 'docker-compose.yml'
   workflow_dispatch:
 
@@ -18,7 +17,6 @@ jobs:
     outputs:
       worker: ${{ steps.filter.outputs.worker }}
       backend: ${{ steps.filter.outputs.backend }}
-      nginx: ${{ steps.filter.outputs.nginx }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,8 +29,6 @@ jobs:
               - 'rusaint/**'
             backend:
               - 'backend/**'
-            nginx:
-              - 'nginx/**'
 
   build-worker:
     needs: detect-changes
@@ -87,34 +83,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-nginx:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.nginx == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/build-push-action@v6
-        with:
-          context: nginx
-          push: true
-          tags: ghcr.io/dwl21/ssu-chapel/nginx:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
   deploy:
-    needs: [build-worker, build-backend, build-nginx]
+    needs: [build-worker, build-backend]
     if: always() && !failure() && !cancelled()
     runs-on: ubuntu-latest
     steps:
@@ -138,7 +108,7 @@ jobs:
           set -e
           cd "${{ vars.DEPLOY_PATH }}"
           echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker compose pull worker backend nginx
+          docker compose pull worker backend
           docker compose up -d --no-build
           docker image prune -f
           ENDSSH

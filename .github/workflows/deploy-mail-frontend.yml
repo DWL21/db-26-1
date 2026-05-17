@@ -1,0 +1,38 @@
+name: Deploy Mail Frontend to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mail-frontend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mail-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: mail-frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: mail-frontend
+        env:
+          VITE_API_BASE: https://ssu-mail.simplyimg.com
+
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy dist --project-name ssu-mails --commit-dirty=true
+        working-directory: mail-frontend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
