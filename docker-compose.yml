@@ -78,6 +78,7 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-https://ssu-mails.pages.dev}
+      CRON_SECRET: ${CRON_SECRET}
     depends_on:
       postgres:
         condition: service_healthy

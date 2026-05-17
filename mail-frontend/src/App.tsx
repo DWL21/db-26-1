@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import SubscriptionForm from './SubscriptionForm';
 import UnsubscribePage from './UnsubscribePage';
 
-// 배포 시 VITE_API_BASE 환경변수로 Worker 엔드포인트 주입.
-// 로컬 개발은 wrangler dev 기본 포트 (http://127.0.0.1:8787) 사용.
-const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://127.0.0.1:8787';
+// 배포 시 VITE_API_BASE 환경변수로 백엔드 엔드포인트 주입.
+// 로컬 개발은 docker-compose.override.yml의 8001 포트 사용.
+const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8001';
 
 export default function App() {
   const unsubscribeToken = useMemo(() => {
