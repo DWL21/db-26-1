@@ -56,14 +56,13 @@ async def subscribe(body: SubscribeRequest, background_tasks: BackgroundTasks, d
 
     subscriber = await _get_or_create_subscriber(db, email)
 
-    result = await db.execute(
-        select(Subscription.category).where(Subscription.subscriber_id == subscriber.id)
+    await db.execute(
+        delete(Subscription).where(Subscription.subscriber_id == subscriber.id)
     )
-    existing = set(result.scalars().all())
 
     seen = set()
     for cat in body.categories:
-        if cat.value not in existing and cat.value not in seen:
+        if cat.value not in seen:
             db.add(Subscription(subscriber_id=subscriber.id, category=cat.value))
             seen.add(cat.value)
 

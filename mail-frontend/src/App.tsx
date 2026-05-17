@@ -164,7 +164,7 @@ function HeroMailMock() {
         ))}
       </div>
       <div className="mailmock__foot">
-        <span className="mailmock__foot-btn">전체 공지사항 보기</span>
+        <a className="mailmock__foot-btn" href="https://scatch.ssu.ac.kr/%ea%b3%b5%ec%a7%80%ec%82%ac%ed%95%ad/?f&keyword" target="_blank" rel="noopener noreferrer">전체 공지사항 보기</a>
       </div>
     </div>
   );
@@ -409,7 +409,7 @@ function MailPreview({ selected }: { selected: string[] }) {
         )}
       </div>
       <div className="mail__foot">
-        <span className="mail__foot-btn">전체 공지사항 보기</span>
+        <a className="mail__foot-btn" href="https://scatch.ssu.ac.kr/%ea%b3%b5%ec%a7%80%ec%82%ac%ed%95%ad/?f&keyword" target="_blank" rel="noopener noreferrer">전체 공지사항 보기</a>
         <p className="mail__foot-note">
           본 메일은 숭실대학교 공지사항 구독 서비스에 의해 자동 발송되었습니다.<br />
           <a href="#">구독 해지</a>
