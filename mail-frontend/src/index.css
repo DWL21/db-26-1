@@ -1,10 +1,10 @@
 /* ─── Tokens (email palette) ─────────────────────────────── */
 :root {
-  --teal: #4ec6c1;
-  --teal-2: #3aa9a4;
-  --teal-3: #2e8c87;
-  --teal-50: #eaf7f6;
-  --teal-100: #d6efed;
+  --teal: #014099;
+  --teal-2: #012d6c;
+  --teal-3: #011a45;
+  --teal-50: #dbeafe;
+  --teal-100: #bfdbfe;
 
   --ink: #333333;
   --ink-2: #4a4a4a;
@@ -1061,6 +1061,36 @@ body {
   color: var(--muted);
   margin: 0;
   max-width: 62ch;
+}
+
+/* ─── Subscribe standalone page (SSU Blue 팔레트) ────────── */
+.subscribe-page-standalone {
+  min-height: 100vh;
+  background: #F1F3F7;
+
+  --teal:    #014099;
+  --teal-2:  #012d6c;
+  --teal-3:  #011a45;
+  --teal-50: #dbeafe;
+  --teal-100: #bfdbfe;
+
+  --ink:   #1f2937;
+  --ink-2: #374151;
+  --muted: #6b7280;
+  --muted-2: #9ca3af;
+  --faded: #d1d5db;
+
+  --line:   #e5e7eb;
+  --line-2: #d1d5db;
+  --bg:     #F1F3F7;
+  --panel:  #ffffff;
+  --panel-2: #f9fafb;
+  --panel-3: #f8fafc;
+}
+
+.subscribe-standalone__main {
+  padding: clamp(40px, 6vw, 72px) 0 clamp(64px, 8vw, 96px);
+  border-top: 1px solid #e5e7eb;
 }
 
 /* ─── Legal pages ────────────────────────────────────────── */

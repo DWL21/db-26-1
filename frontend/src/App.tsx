@@ -83,7 +83,7 @@ function ChapelMiniMap({
                 if (isUser && !isViewed) cls += ' user-marker';
                 return (
                   <div key={s} className={cls} onClick={() => onSectionClick(s)} title={`${s}구역`}
-                    style={{
+                    style={{ 
                         backgroundColor: isViewed ? (isDarkMode ? '#38bdf8' : '#002147') : (isDarkMode ? '#1e293b' : '#f8fafc'),
                         color: isViewed ? '#fff' : (isDarkMode ? '#cbd5e1' : '#64748b'),
                         borderColor: isDarkMode ? '#334155' : '#e2e8f0'
@@ -150,7 +150,7 @@ function SeatSectionGrid({
           if (!exists) return <div key={c} className="seat-cell seat-cell-void" />;
           return (
             <div key={c} className={`seat-cell${isMine ? ' my-seat seat-ping' : ''}`}
-                 style={{
+                 style={{ 
                     backgroundColor: isMine ? (isDarkMode ? '#38bdf8' : '#002147') : (isDarkMode ? '#334155' : '#e2e8f0'),
                     borderColor: isDarkMode ? '#475569' : '#cbd5e1'
                  }}>
@@ -326,7 +326,6 @@ interface ChapelResponse {
 function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-
   const [userId, setUserId]     = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError]   = useState<string | null>(null);
@@ -356,7 +355,7 @@ function App() {
 
   useEffect(() => {
     if (chapelData) {
-      setStampVisible(false);
+      setStampVisible(false); 
       const timer = setTimeout(() => {
         setStampVisible(true);
       }, 150);
@@ -466,7 +465,7 @@ function App() {
     localStorage.removeItem('ssu_userid');
     setToken(null);
     setChapelData(null);
-    setStampVisible(false);
+    setStampVisible(false); 
     setLoading(false);
     setUserId('');
     setPassword('');
@@ -484,9 +483,9 @@ function App() {
   };
 
 return (
-    <div className="app-container" style={{
-        justifyContent: 'flex-start',
-        paddingTop: '1.5rem',
+    <div className="app-container" style={{ 
+        justifyContent: 'flex-start', 
+        paddingTop: '1.5rem', 
         backgroundColor: theme.bg,
         minHeight: '100vh',
         transition: 'background-color 0.3s ease'
@@ -504,7 +503,7 @@ return (
         }
       `}</style>
 
-      <button
+      <button 
         onClick={toggleTheme}
         style={{
           position: 'fixed', top: '1rem', right: '1rem', zIndex: 1000,
@@ -517,14 +516,14 @@ return (
         {isDarkMode ? '☀️' : '🌙'}
       </button>
 
-      <div className="results-container glass-panel" style={{
-          position: 'relative',
+      <div className="results-container glass-panel" style={{ 
+          position: 'relative', 
           overflow: 'hidden',
           backgroundColor: theme.panel,
           color: theme.text,
           borderColor: theme.border
       }}>
-
+        
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '6px', backgroundColor: theme.ssuBlue }}></div>
 
         <div className="header-action" style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -560,14 +559,14 @@ return (
 
           const absentCount      = chapelData.general_information.absence_time;
           const remainingAbsences  = FIX_MAX_ABSENCE - absentCount;
-
+          
           return (
             <>
               {isFWarning && !isOfficiallyPassed && (
-                <div style={{
-                    backgroundColor: isDarkMode ? '#450a0a' : '#fef2f2',
-                    border: `1px solid ${isDarkMode ? '#991b1b' : '#fee2e2'}`,
-                    borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px'
+                <div style={{ 
+                    backgroundColor: isDarkMode ? '#450a0a' : '#fef2f2', 
+                    border: `1px solid ${isDarkMode ? '#991b1b' : '#fee2e2'}`, 
+                    borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' 
                 }}>
                   <span style={{ fontSize: '1.5rem' }}>⚠️</span>
                   <div>
@@ -602,7 +601,7 @@ return (
                     {attendedCount}
                     <span style={{ fontSize: '0.9rem', fontWeight: 400, color: theme.subText }}> / {requiredAttendance}회 필요</span>
                   </span>
-
+                  
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px', marginBottom: '8px' }}>
                     {chapelData.attendances.map((record, idx) => {
                       // 🚀 실제 출결 상태 가져오기 (미래 날짜는 '예정'으로 변환)
@@ -692,10 +691,10 @@ return (
             <span className="seating-toggle-indicator" style={{ color: theme.subText }}>{showSeatingImage ? '▲ 닫기' : '▼ 보기'}</span>
           </button>
           {showSeatingImage && (
-            <img
-                src="https://chaplain.ssu.ac.kr/wp-content/uploads/sites/7/2018/05/ssu01_02_05_plan.jpg"
-                alt="좌석 구조"
-                className="seating-chart-img"
+            <img 
+                src="https://chaplain.ssu.ac.kr/wp-content/uploads/sites/7/2018/05/ssu01_02_05_plan.jpg" 
+                alt="좌석 구조" 
+                className="seating-chart-img" 
                 style={{ filter: isDarkMode ? 'brightness(0.8) contrast(1.2)' : 'none' }}
             />
           )}
@@ -710,8 +709,8 @@ return (
                 const actualAttendance = getActualAttendance(record.class_date, record.attendance);
 
                 return (
-                  <div key={index} className="attendance-card" style={{
-                      backgroundColor: theme.bg,
+                  <div key={index} className="attendance-card" style={{ 
+                      backgroundColor: theme.bg, 
                       border: `1px solid ${theme.border}`,
                       borderRadius: '8px',
                       padding: '1rem'
@@ -749,7 +748,7 @@ return (
                 <label htmlFor="userId">학번 (U-Saint 아이디)</label>
                 <input id="userId" type="text" className="input-field" placeholder="예: 20261234"
                   value={userId} onChange={e => setUserId(e.target.value)}
-                  disabled={authLoading} autoComplete="username" autoFocus
+                  disabled={authLoading} autoComplete="username" autoFocus 
                   style={{ backgroundColor: isDarkMode ? '#334155' : '#ffffff', color: theme.text, border: `1px solid ${theme.border}` }}
                 />
               </div>
@@ -764,7 +763,7 @@ return (
                 </div>
                 <input id="password" type="password" className="input-field" placeholder="U-Saint 비밀번호를 입력하세요"
                   value={password} onChange={e => setPassword(e.target.value)}
-                  disabled={authLoading} autoComplete="current-password"
+                  disabled={authLoading} autoComplete="current-password" 
                   style={{ backgroundColor: isDarkMode ? '#334155' : '#ffffff', color: theme.text, border: `1px solid ${theme.border}` }}
                 />
               </div>
