@@ -1,9 +1,67 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import UnsubscribePage from './UnsubscribePage';
 import PrivacyPage from './PrivacyPage';
 import TermsPage from './TermsPage';
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8001';
+
+/* ───────── Confetti ─────────────────────────────────────── */
+const CONFETTI_COLORS = ['#4ec6c1', '#3aa9a4', '#f5c518', '#22c55e', '#f87171', '#a78bfa', '#38bdf8', '#fb923c'];
+
+function Confetti() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const pieces = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -20 - Math.random() * 200,
+      w: 6 + Math.random() * 8, h: 10 + Math.random() * 6,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      rot: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.15,
+      vx: (Math.random() - 0.5) * 2.5,
+      vy: 2.5 + Math.random() * 3.5,
+      opacity: 1,
+    }));
+    let raf: number;
+    let done = false;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let allOut = true;
+      for (const p of pieces) {
+        p.x += p.vx; p.y += p.vy; p.rot += p.rotSpeed;
+        if (p.y > canvas.height * 0.7) p.opacity = Math.max(0, p.opacity - 0.025);
+        if (p.y < canvas.height + 20) allOut = false;
+        ctx.save();
+        ctx.globalAlpha = p.opacity;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+      if (!allOut && !done) raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => { done = true; cancelAnimationFrame(raf); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 999 }} />;
+}
+
+/* ───────── Ticker data ──────────────────────────────────── */
+const TICKER_ITEMS = [
+  { cat: '장학',     title: '2026-1 국가장학금 2차 신청 마감' },
+  { cat: '채용',     title: '삼성전자 DS부문 신입 채용설명회' },
+  { cat: '학사',     title: '2026학년도 1학기 수강신청 일정' },
+  { cat: '국제교류', title: '2026 봄학기 교환학생 모집 공고' },
+  { cat: '비교과',   title: '총장 초청 봄 콘서트 (5/24)' },
+  { cat: '봉사',     title: '1365 자원봉사 정기 활동 모집' },
+];
 
 /* ───────── Data ─────────────────────────────────────────── */
 const CATEGORIES = [
@@ -104,6 +162,23 @@ function Tick() {
       <path d="M2.5 6.2L4.7 8.4 9.5 3.6" stroke="currentColor"
         strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+/* ───────── Ticker ───────────────────────────────────────── */
+function Ticker() {
+  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  return (
+    <div className="ticker">
+      <div className="ticker__inner">
+        {items.map((it, i) => (
+          <span className="ticker__item" key={i}>
+            <span className="ticker__cat">{it.cat}</span>
+            {it.title}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -410,7 +485,9 @@ function StepDone({ email, count, kind }: { email: string; count: number; kind: 
     );
   }
   return (
-    <div className="success">
+    <>
+      <Confetti />
+      <div className="success">
       <div className="success__mark">✓</div>
       <h3 className="success__title">
         {kind === 'updated' ? '구독이 변경되었습니다' : '구독이 완료되었습니다'}
@@ -421,6 +498,7 @@ function StepDone({ email, count, kind }: { email: string; count: number; kind: 
       </p>
       <div className="success__meta">첫 메일까지 약 {nextEightCountdown()}</div>
     </div>
+    </>
   );
 }
 
@@ -765,6 +843,7 @@ export default function App() {
     <>
       <Header />
       <Hero />
+      <Ticker />
       <HowItWorks />
       <Subscribe />
       <FAQ />
