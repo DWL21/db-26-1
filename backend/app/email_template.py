@@ -61,7 +61,7 @@ def build_email_html(
     target_date: date | None = None,
     unsub_token: str | None = None,
     welcome: bool = False,
-    max_notices: int = 30,
+    max_notices: int = 100,
 ) -> str:
     if target_date is None:
         target_date = date.today()
