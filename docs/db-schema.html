@@ -8,15 +8,19 @@
     :root {
       --teal: #4ec6c1;
       --teal-2: #3aa9a4;
+      --teal-3: #2e8c87;
       --teal-50: #eaf7f6;
       --teal-100: #d6efed;
       --ink: #333;
       --ink-2: #4a4a4a;
       --muted: #888;
+      --muted-2: #999;
       --line: #e8e8e8;
       --bg: #f5f5f5;
       --panel: #fff;
       --danger: #e74c3c;
+      --gold: #c49a00;
+      --gold-bg: #fffbf0;
       --sans: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", system-ui, sans-serif;
       --mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
     }
@@ -26,11 +30,13 @@
       background: var(--bg);
       color: var(--ink);
       -webkit-font-smoothing: antialiased;
-      padding: 48px 32px 80px;
+      padding: 48px 32px 96px;
     }
+
+    /* ── Page header ───────────────────────────── */
     .page-head {
       max-width: 960px;
-      margin: 0 auto 48px;
+      margin: 0 auto 52px;
     }
     .page-label {
       font-size: 11px;
@@ -47,34 +53,82 @@
       color: var(--ink);
       margin-bottom: 8px;
     }
-    .page-meta {
-      font-size: 13px;
-      color: var(--muted);
-    }
+    .page-meta { font-size: 13px; color: var(--muted); }
 
-    /* ERD 다이어그램 */
-    .erd {
+    /* ── ERD ───────────────────────────────────── */
+    .erd-section {
       max-width: 960px;
       margin: 0 auto 56px;
+    }
+    .erd-section__label {
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .erd {
       display: flex;
-      gap: 24px;
+      gap: 0;
       align-items: flex-start;
       flex-wrap: wrap;
+      row-gap: 32px;
     }
-    .erd-relation {
-      display: flex;
+    .erd-box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      min-width: 210px;
+      box-shadow: 0 4px 16px -8px rgba(0,0,0,0.12);
+    }
+    .erd-box__head {
+      background: var(--teal);
+      padding: 10px 16px;
+      color: #fff;
+    }
+    .erd-box__head h3 {
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--mono);
+      letter-spacing: 0.02em;
+    }
+    .erd-box__head p {
+      font-size: 11px;
+      color: rgba(255,255,255,0.75);
+      margin-top: 2px;
+    }
+    .erd-box__rows { border-top: 1px solid var(--teal-100); }
+    .erd-row {
+      display: grid;
+      grid-template-columns: 22px 1fr auto;
+      gap: 8px;
       align-items: center;
-      gap: 0;
+      padding: 7px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12.5px;
     }
+    .erd-row:last-child { border-bottom: 0; }
+    .erd-row--pk { background: var(--teal-50); }
+    .erd-row--fk { background: var(--gold-bg); }
+    .erd-key { font-size: 10px; font-weight: 700; color: var(--teal-2); font-family: var(--mono); }
+    .erd-key--fk { color: var(--gold); }
+    .erd-col { font-family: var(--mono); color: var(--ink-2); font-weight: 500; }
+    .erd-type { font-family: var(--mono); color: var(--muted-2); font-size: 11px; }
+    /* relation arrow */
     .erd-connector {
       display: flex;
       flex-direction: column;
+      justify-content: center;
       align-items: center;
       gap: 4px;
-      padding: 0 12px;
+      padding: 0 10px;
+      align-self: center;
+      min-height: 60px;
     }
     .erd-connector-line {
-      width: 48px;
+      width: 40px;
       height: 2px;
       background: var(--line);
       position: relative;
@@ -98,60 +152,41 @@
       font-family: var(--mono);
       white-space: nowrap;
     }
-    .erd-box {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
-      min-width: 200px;
-      box-shadow: 0 4px 16px -8px rgba(0,0,0,0.12);
+    .erd-standalone {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
     }
-    .erd-box__head {
-      background: var(--teal);
-      padding: 10px 16px;
-      color: #fff;
+    .erd-vdivider {
+      width: 1px;
+      height: 100px;
+      background: var(--line);
+      align-self: center;
+      margin: 0 8px;
     }
-    .erd-box__head h3 {
-      font-size: 13px;
-      font-weight: 700;
-      font-family: var(--mono);
-      letter-spacing: 0.02em;
-    }
-    .erd-box__rows { border-top: 1px solid var(--teal-100); }
-    .erd-row {
-      display: grid;
-      grid-template-columns: 20px 1fr auto;
-      gap: 8px;
-      align-items: center;
-      padding: 7px 14px;
-      border-bottom: 1px solid var(--line);
-      font-size: 12.5px;
-    }
-    .erd-row:last-child { border-bottom: 0; }
-    .erd-row--pk { background: var(--teal-50); }
-    .erd-row--fk { background: #fffbf0; }
-    .erd-key {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--teal-2);
-      font-family: var(--mono);
-    }
-    .erd-key--fk { color: #c49a00; }
-    .erd-col { font-family: var(--mono); color: var(--ink-2); font-weight: 500; }
-    .erd-type { font-family: var(--mono); color: var(--muted); font-size: 11px; }
 
-    /* 상세 테이블 */
+    /* ── Detail tables ─────────────────────────── */
     .tables {
       max-width: 960px;
       margin: 0 auto;
       display: grid;
       gap: 32px;
     }
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
     .table-card {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
       overflow: hidden;
+      box-shadow: 0 2px 8px -4px rgba(0,0,0,0.08);
     }
     .table-card__bar {
       background: var(--teal);
@@ -171,10 +206,7 @@
       font-size: 12px;
       color: rgba(255,255,255,0.8);
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    table { width: 100%; border-collapse: collapse; }
     thead tr {
       background: var(--teal-50);
       border-bottom: 1px solid var(--teal-100);
@@ -185,7 +217,7 @@
       font-size: 11px;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--teal-2);
+      color: var(--teal-3);
       font-weight: 700;
     }
     td {
@@ -196,7 +228,7 @@
     }
     tr:last-child td { border-bottom: 0; }
     tr.row-pk { background: var(--teal-50); }
-    tr.row-fk { background: #fffbf0; }
+    tr.row-fk { background: var(--gold-bg); }
     .badge {
       display: inline-block;
       font-size: 10px;
@@ -217,11 +249,24 @@
     .constraint-box {
       background: var(--bg);
       border-top: 1px solid var(--line);
-      padding: 12px 16px;
+      padding: 10px 16px;
       font-size: 12px;
       color: var(--muted);
       font-family: var(--mono);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
     }
+    .constraint-box .c-item { display: flex; gap: 6px; align-items: center; }
+    .constraint-box .c-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: #e8e8e8;
+      color: var(--ink-2);
+    }
+    .constraint-box .c-tag--idx { background: #ddeeff; color: #226; }
     .constraint-box span { color: var(--ink-2); font-weight: 600; }
   </style>
   <link rel="stylesheet" crossorigin
@@ -234,76 +279,123 @@
   <div class="page-head">
     <div class="page-label">Database Schema</div>
     <h1 class="page-title">테이블 구조</h1>
-    <p class="page-meta">ssu-mail backend · SQLAlchemy / PostgreSQL · 2026-05-17</p>
+    <p class="page-meta">ssu-mail backend · SQLAlchemy / PostgreSQL · 2026-05-19</p>
   </div>
 
   <!-- ERD -->
-  <div class="erd">
-    <!-- subscribers -->
-    <div class="erd-box">
-      <div class="erd-box__head"><h3>subscribers</h3></div>
-      <div class="erd-box__rows">
-        <div class="erd-row erd-row--pk">
-          <span class="erd-key">PK</span>
-          <span class="erd-col">id</span>
-          <span class="erd-type">bigint</span>
-        </div>
-        <div class="erd-row">
-          <span></span>
-          <span class="erd-col">email</span>
-          <span class="erd-type">varchar</span>
-        </div>
-        <div class="erd-row">
-          <span></span>
-          <span class="erd-col">unsub_token</span>
-          <span class="erd-type">varchar</span>
-        </div>
-        <div class="erd-row">
-          <span></span>
-          <span class="erd-col">created_at</span>
-          <span class="erd-type">timestamp</span>
-        </div>
-      </div>
-    </div>
+  <div class="erd-section">
+    <div class="erd-section__label">ERD Overview</div>
+    <div class="erd">
 
-    <!-- connector -->
-    <div class="erd-connector">
-      <div class="erd-connector-line"></div>
-      <div class="erd-connector-label">1 : N</div>
-    </div>
-
-    <!-- subscriptions -->
-    <div class="erd-box">
-      <div class="erd-box__head"><h3>subscriptions</h3></div>
-      <div class="erd-box__rows">
-        <div class="erd-row erd-row--pk">
-          <span class="erd-key">PK</span>
-          <span class="erd-col">id</span>
-          <span class="erd-type">bigint</span>
-        </div>
-        <div class="erd-row erd-row--fk">
-          <span class="erd-key erd-key--fk">FK</span>
-          <span class="erd-col">subscriber_id</span>
-          <span class="erd-type">bigint</span>
-        </div>
-        <div class="erd-row">
-          <span></span>
-          <span class="erd-col">category</span>
-          <span class="erd-type">varchar</span>
-        </div>
-        <div class="erd-row">
-          <span></span>
-          <span class="erd-col">created_at</span>
-          <span class="erd-type">timestamp</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- auth_codes (standalone) -->
-    <div style="display:flex;align-items:center;gap:24px;">
-      <div style="width:1px;height:80px;background:var(--line);margin:0 0 0 24px;"></div>
+      <!-- subscribers -->
       <div class="erd-box">
-        <div class="erd-box__head"><h3>auth_codes</h3></div>
+        <div class="erd-box__head">
+          <h3>subscribers</h3>
+          <p>구독자 계정</p>
+        </div>
+        <div class="erd-box__rows">
+          <div class="erd-row erd-row--pk">
+            <span class="erd-key">PK</span>
+            <span class="erd-col">id</span>
+            <span class="erd-type">bigint</span>
+          </div>
+          <div class="erd-row">
+            <span></span>
+            <span class="erd-col">email</span>
+            <span class="erd-type">varchar</span>
+          </div>
+          <div class="erd-row">
+            <span></span>
+            <span class="erd-col">unsub_token</span>
+            <span class="erd-type">varchar</span>
+          </div>
+          <div class="erd-row">
+            <span></span>
+            <span class="erd-col">created_at</span>
+            <span class="erd-type">timestamp</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1:N → subscriptions -->
+      <div class="erd-connector">
+        <div class="erd-connector-line"></div>
+        <div class="erd-connector-label">1 : N</div>
+      </div>
+
+      <!-- subscriptions -->
+      <div class="erd-box">
+        <div class="erd-box__head">
+          <h3>subscriptions</h3>
+          <p>카테고리 구독 매핑</p>
+        </div>
+        <div class="erd-box__rows">
+          <div class="erd-row erd-row--pk">
+            <span class="erd-key">PK</span>
+            <span class="erd-col">id</span>
+            <span class="erd-type">bigint</span>
+          </div>
+          <div class="erd-row erd-row--fk">
+            <span class="erd-key erd-key--fk">FK</span>
+            <span class="erd-col">subscriber_id</span>
+            <span class="erd-type">bigint</span>
+          </div>
+          <div class="erd-row">
+            <span></span>
+            <span class="erd-col">category</span>
+            <span class="erd-type">varchar</span>
+          </div>
+          <div class="erd-row">
+            <span></span>
+            <span class="erd-col">created_at</span>
+            <span class="erd-type">timestamp</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1:N → subscriber_notices -->
+      <div class="erd-connector">
+        <div class="erd-connector-line"></div>
+        <div class="erd-connector-label">1 : N</div>
+      </div>
+
+      <!-- subscriber_notices -->
+      <div class="erd-box">
+        <div class="erd-box__head">
+          <h3>subscriber_notices</h3>
+          <p>구독자별 발송 이력</p>
+        </div>
+        <div class="erd-box__rows">
+          <div class="erd-row erd-row--pk">
+            <span class="erd-key">PK</span>
+            <span class="erd-col">id</span>
+            <span class="erd-type">bigint</span>
+          </div>
+          <div class="erd-row erd-row--fk">
+            <span class="erd-key erd-key--fk">FK</span>
+            <span class="erd-col">subscriber_id</span>
+            <span class="erd-type">bigint</span>
+          </div>
+          <div class="erd-row">
+            <span></span>
+            <span class="erd-col">link</span>
+            <span class="erd-type">varchar</span>
+          </div>
+          <div class="erd-row">
+            <span></span>
+            <span class="erd-col">sent_at</span>
+            <span class="erd-type">timestamp</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- auth_codes (standalone) -->
+      <div class="erd-vdivider"></div>
+      <div class="erd-box">
+        <div class="erd-box__head">
+          <h3>auth_codes</h3>
+          <p>인증번호 임시 저장</p>
+        </div>
         <div class="erd-box__rows">
           <div class="erd-row erd-row--pk">
             <span class="erd-key">PK</span>
@@ -322,31 +414,13 @@
           </div>
         </div>
       </div>
-      <div class="erd-box">
-        <div class="erd-box__head"><h3>notices</h3></div>
-        <div class="erd-box__rows">
-          <div class="erd-row erd-row--pk">
-            <span class="erd-key">PK</span>
-            <span class="erd-col">id</span>
-            <span class="erd-type">bigint</span>
-          </div>
-          <div class="erd-row">
-            <span></span>
-            <span class="erd-col">link</span>
-            <span class="erd-type">varchar</span>
-          </div>
-          <div class="erd-row">
-            <span></span>
-            <span class="erd-col">created_at</span>
-            <span class="erd-type">timestamp</span>
-          </div>
-        </div>
-      </div>
+
     </div>
   </div>
 
   <!-- 상세 테이블 -->
   <div class="tables">
+    <div class="section-label">Table Details</div>
 
     <!-- subscribers -->
     <div class="table-card">
@@ -357,12 +431,7 @@
       <table>
         <thead>
           <tr>
-            <th>컬럼</th>
-            <th>타입</th>
-            <th>키</th>
-            <th>Nullable</th>
-            <th>기본값</th>
-            <th>설명</th>
+            <th>컬럼</th><th>타입</th><th>키</th><th>Nullable</th><th>기본값</th><th>설명</th>
           </tr>
         </thead>
         <tbody>
@@ -388,7 +457,7 @@
             <td><span class="badge badge-uq">UQ</span></td>
             <td><span class="nullable-yes">YES</span></td>
             <td>—</td>
-            <td class="col-desc">구독 해지용 토큰 (secrets.token_hex(24))</td>
+            <td class="col-desc">구독 해지용 토큰 · secrets.token_hex(24)</td>
           </tr>
           <tr>
             <td><span class="col-name">created_at</span></td>
@@ -411,12 +480,7 @@
       <table>
         <thead>
           <tr>
-            <th>컬럼</th>
-            <th>타입</th>
-            <th>키</th>
-            <th>Nullable</th>
-            <th>기본값</th>
-            <th>설명</th>
+            <th>컬럼</th><th>타입</th><th>키</th><th>Nullable</th><th>기본값</th><th>설명</th>
           </tr>
         </thead>
         <tbody>
@@ -455,71 +519,24 @@
         </tbody>
       </table>
       <div class="constraint-box">
-        UNIQUE CONSTRAINT <span>uq_subscriber_category</span> (subscriber_id, category)
+        <div class="c-item">
+          <span class="c-tag">UNIQUE</span>
+          <span>uq_subscriber_category</span>
+          <span style="color:var(--muted)">(subscriber_id, category)</span>
+        </div>
       </div>
     </div>
 
-    <!-- auth_codes -->
+    <!-- subscriber_notices -->
     <div class="table-card">
       <div class="table-card__bar">
-        <h2>auth_codes</h2>
-        <p>이메일 인증번호 임시 저장 테이블 · 인증 완료 시 즉시 삭제</p>
+        <h2>subscriber_notices</h2>
+        <p>구독자별 공지 발송 이력 테이블 · 중복 발송 방지 · 60일 후 자동 cleanup</p>
       </div>
       <table>
         <thead>
           <tr>
-            <th>컬럼</th>
-            <th>타입</th>
-            <th>키</th>
-            <th>Nullable</th>
-            <th>기본값</th>
-            <th>설명</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="row-pk">
-            <td><span class="col-name">email</span></td>
-            <td><span class="col-type">VARCHAR</span></td>
-            <td><span class="badge badge-pk">PK</span></td>
-            <td><span class="nullable-no">NO</span></td>
-            <td>—</td>
-            <td class="col-desc">인증 요청 이메일 (이메일당 1개 유지)</td>
-          </tr>
-          <tr>
-            <td><span class="col-name">code</span></td>
-            <td><span class="col-type">VARCHAR</span></td>
-            <td>—</td>
-            <td><span class="nullable-no">NO</span></td>
-            <td>—</td>
-            <td class="col-desc">6자리 인증번호</td>
-          </tr>
-          <tr>
-            <td><span class="col-name">expires_at</span></td>
-            <td><span class="col-type">TIMESTAMPTZ</span></td>
-            <td>—</td>
-            <td><span class="nullable-no">NO</span></td>
-            <td>—</td>
-            <td class="col-desc">인증번호 만료 시각 (요청 시각 + 5분)</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- notices -->
-    <div class="table-card">
-      <div class="table-card__bar">
-        <h2>notices</h2>
-        <p>발송된 공지 링크 기록 테이블 · 중복 발송 방지용</p>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>컬럼</th>
-            <th>타입</th>
-            <th>키</th>
-            <th>Nullable</th>
-            <th>기본값</th>
-            <th>설명</th>
+            <th>컬럼</th><th>타입</th><th>키</th><th>Nullable</th><th>기본값</th><th>설명</th>
           </tr>
         </thead>
         <tbody>
@@ -531,21 +548,87 @@
             <td><span class="col-type">autoincrement</span></td>
             <td class="col-desc">레코드 고유 식별자</td>
           </tr>
+          <tr class="row-fk">
+            <td><span class="col-name">subscriber_id</span></td>
+            <td><span class="col-type">BIGINT</span></td>
+            <td><span class="badge badge-fk">FK</span></td>
+            <td><span class="nullable-no">NO</span></td>
+            <td>—</td>
+            <td class="col-desc">subscribers.id 참조 · CASCADE DELETE</td>
+          </tr>
           <tr>
             <td><span class="col-name">link</span></td>
             <td><span class="col-type">VARCHAR</span></td>
-            <td><span class="badge badge-uq">UQ</span></td>
+            <td>—</td>
             <td><span class="nullable-no">NO</span></td>
             <td>—</td>
-            <td class="col-desc">공지 원문 URL · 신규 판정 기준</td>
+            <td class="col-desc">발송된 공지 원문 URL</td>
           </tr>
           <tr>
-            <td><span class="col-name">created_at</span></td>
+            <td><span class="col-name">sent_at</span></td>
             <td><span class="col-type">TIMESTAMP</span></td>
             <td>—</td>
             <td><span class="nullable-no">NO</span></td>
             <td><span class="col-type">now()</span></td>
-            <td class="col-desc">링크 최초 저장(발송 성공) 시각</td>
+            <td class="col-desc">발송 시각 · cleanup 기준 컬럼</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="constraint-box">
+        <div class="c-item">
+          <span class="c-tag">UNIQUE</span>
+          <span>uq_subscriber_link</span>
+          <span style="color:var(--muted)">(subscriber_id, link)</span>
+        </div>
+        <div class="c-item">
+          <span class="c-tag c-tag--idx">INDEX</span>
+          <span>ix_subscriber_notices_sent_at</span>
+          <span style="color:var(--muted)">(sent_at)</span>
+        </div>
+        <div class="c-item">
+          <span class="c-tag c-tag--idx">INDEX</span>
+          <span>ix_subscriber_notices_subscriber_id</span>
+          <span style="color:var(--muted)">(subscriber_id)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- auth_codes -->
+    <div class="table-card">
+      <div class="table-card__bar">
+        <h2>auth_codes</h2>
+        <p>이메일 인증번호 임시 저장 테이블 · 인증 완료(또는 소비) 시 즉시 삭제</p>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>컬럼</th><th>타입</th><th>키</th><th>Nullable</th><th>기본값</th><th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-pk">
+            <td><span class="col-name">email</span></td>
+            <td><span class="col-type">VARCHAR</span></td>
+            <td><span class="badge badge-pk">PK</span></td>
+            <td><span class="nullable-no">NO</span></td>
+            <td>—</td>
+            <td class="col-desc">인증 요청 이메일 · 이메일당 1행 유지</td>
+          </tr>
+          <tr>
+            <td><span class="col-name">code</span></td>
+            <td><span class="col-type">VARCHAR</span></td>
+            <td>—</td>
+            <td><span class="nullable-no">NO</span></td>
+            <td>—</td>
+            <td class="col-desc">6자리 인증번호 (100000~999999)</td>
+          </tr>
+          <tr>
+            <td><span class="col-name">expires_at</span></td>
+            <td><span class="col-type">TIMESTAMPTZ</span></td>
+            <td>—</td>
+            <td><span class="nullable-no">NO</span></td>
+            <td>—</td>
+            <td class="col-desc">만료 시각 · 요청 시각 + 10분</td>
           </tr>
         </tbody>
       </table>
