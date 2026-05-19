@@ -4,6 +4,8 @@ import PrivacyPage from './PrivacyPage';
 import TermsPage from './TermsPage';
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8001';
+const DEMO_MODE = !import.meta.env.VITE_API_BASE;
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 /* ───────── Confetti ─────────────────────────────────────── */
 const CONFETTI_COLORS = ['#4ec6c1', '#3aa9a4', '#f5c518', '#22c55e', '#f87171', '#a78bfa', '#38bdf8', '#fb923c'];
@@ -524,14 +526,18 @@ function Subscribe() {
       }
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/auth/request-code`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim() }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error((err as { detail?: string }).detail || '인증번호 발송에 실패했습니다.');
+        if (DEMO_MODE) {
+          await sleep(900);
+        } else {
+          const res = await fetch(`${API_BASE}/auth/request-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim() }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { detail?: string }).detail || '인증번호 발송에 실패했습니다.');
+          }
         }
         setStep(3);
       } catch (e) {
@@ -541,14 +547,18 @@ function Subscribe() {
       if (code.join('').length !== 6) { setError('6자리 인증번호를 모두 입력해주세요.'); return; }
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/subscriptions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim(), categories: selected, auth_code: code.join('') }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error((err as { detail?: string }).detail || '인증에 실패했거나 인증번호가 만료되었습니다.');
+        if (DEMO_MODE) {
+          await sleep(1200);
+        } else {
+          const res = await fetch(`${API_BASE}/subscriptions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim(), categories: selected, auth_code: code.join('') }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { detail?: string }).detail || '인증에 실패했거나 인증번호가 만료되었습니다.');
+          }
         }
         setStep(4);
       } catch (e) {
