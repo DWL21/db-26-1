@@ -202,8 +202,8 @@ async def send_now_to_subscriber(subscriber_id: int, categories: set[str]) -> No
         return
 
     today = date.today()
-    html = build_email_html(notices, target_date=today, unsub_token=subscriber.unsub_token)
-    subject = f"숭실대 공지사항 ({today.strftime('%Y.%m.%d')}) — {len(notices)}건"
+    html = build_email_html(notices, target_date=today, unsub_token=subscriber.unsub_token, welcome=True)
+    subject = f"숭실대 공지사항 구독 완료 ({today.strftime('%Y.%m.%d')}) — {len(notices)}건"
 
     try:
         send_email(subscriber.email, subject, html_body=html)

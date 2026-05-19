@@ -65,6 +65,7 @@ def build_email_html(
     notices: list[dict],
     target_date: date | None = None,
     unsub_token: str | None = None,
+    welcome: bool = False,
 ) -> str:
     if target_date is None:
         target_date = date.today()
@@ -85,6 +86,22 @@ def build_email_html(
               <a href="{unsub_url}" style="font-size:11px;color:#bbb;text-decoration:underline;">
                 구독 해지
               </a>
+            </td>
+          </tr>"""
+
+    welcome_html = ""
+    if welcome:
+        welcome_html = """
+          <!-- Welcome banner -->
+          <tr>
+            <td style="background-color:#eaf7f6;border-left:1px solid #e8e8e8;border-right:1px solid #e8e8e8;padding:18px 20px;">
+              <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#2e8c87;">
+                구독해주셔서 감사합니다! 🎉
+              </p>
+              <p style="margin:0;font-size:13px;color:#4a4a4a;line-height:1.6;">
+                선택하신 카테고리의 새 공지가 생기면 <strong>매일 아침 08:00</strong>에 이 메일로 보내드립니다.<br>
+                아래는 구독 시점의 최신 공지사항입니다. 내일부터 정기 발송이 시작됩니다.
+              </p>
             </td>
           </tr>"""
 
@@ -115,7 +132,7 @@ def build_email_html(
               </p>
             </td>
           </tr>
-
+          {welcome_html}
           <!-- Body -->
           <tr>
             <td style="background-color:#f9fafb;border-left:1px solid #e8e8e8;border-right:1px solid #e8e8e8;padding:12px 12px 4px;">
