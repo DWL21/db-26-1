@@ -28,6 +28,17 @@ class UnsubscribeRequest(BaseModel):
     categories: list[Category]
 
 
+class FullUnsubscribeRequest(BaseModel):
+    email: EmailStr
+    auth_code: str
+
+
 class SubscriptionResponse(BaseModel):
     email: str
     subscribed_categories: list[str]
+
+
+class SubscriptionCheckResponse(BaseModel):
+    email: str
+    subscribed_categories: list[str]
+    is_registered: bool

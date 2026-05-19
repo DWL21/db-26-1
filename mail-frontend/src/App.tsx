@@ -223,11 +223,11 @@ function HowItWorks() {
 }
 
 /* ───────── Subscribe flow ───────────────────────────────── */
-function Stepper({ step, onJump }: { step: number; onJump: (n: number) => void }) {
+function Stepper({ step, onJump, mode }: { step: number; onJump: (n: number) => void; mode: 'new' | 'existing' | null }) {
   const items = [
-    { n: 1, label: '카테고리' },
-    { n: 2, label: '이메일' },
-    { n: 3, label: '인증' },
+    { n: 1, label: '이메일' },
+    { n: 2, label: '인증' },
+    { n: 3, label: mode === 'existing' ? '구독 관리' : '카테고리' },
   ];
   return (
     <div className="steps">
@@ -247,7 +247,7 @@ function Stepper({ step, onJump }: { step: number; onJump: (n: number) => void }
   );
 }
 
-function StepCategories({
+function CategoryChips({
   selected, toggleCat, selectAll,
 }: {
   selected: string[];
@@ -256,10 +256,6 @@ function StepCategories({
 }) {
   return (
     <>
-      <div className="form-card__head">
-        <h3 className="form-card__title">어떤 공지를 받을까요?</h3>
-      </div>
-      <p className="form-card__sub">보고 싶은 카테고리를 골라주세요. 언제든지 바꿀 수 있어요.</p>
       <div className="chips__actions">
         <span className="chips__count">{selected.length} / {CATEGORIES.length} 선택됨</span>
         <button className="chips__select-all" onClick={selectAll}>
@@ -282,20 +278,62 @@ function StepCategories({
   );
 }
 
-function StepEmail({
-  email, setEmail, selectedCount,
+function StepCategories({
+  selected, toggleCat, selectAll,
 }: {
-  email: string;
-  setEmail: (v: string) => void;
-  selectedCount: number;
+  selected: string[];
+  toggleCat: (v: string) => void;
+  selectAll: () => void;
 }) {
   return (
     <>
       <div className="form-card__head">
-        <h3 className="form-card__title">어디로 보내드릴까요?</h3>
+        <h3 className="form-card__title">어떤 공지를 받을까요?</h3>
+      </div>
+      <p className="form-card__sub">보고 싶은 카테고리를 골라주세요. 언제든지 바꿀 수 있어요.</p>
+      <CategoryChips selected={selected} toggleCat={toggleCat} selectAll={selectAll} />
+    </>
+  );
+}
+
+function StepManage({
+  selected, toggleCat, selectAll, onUnsubscribe, unsubLoading,
+}: {
+  selected: string[];
+  toggleCat: (v: string) => void;
+  selectAll: () => void;
+  onUnsubscribe: () => void;
+  unsubLoading: boolean;
+}) {
+  return (
+    <>
+      <div className="form-card__head">
+        <h3 className="form-card__title">현재 구독 중인 카테고리</h3>
+      </div>
+      <p className="form-card__sub">원하는 대로 수정하고 저장하거나, 전체 구독을 해지할 수 있어요.</p>
+      <CategoryChips selected={selected} toggleCat={toggleCat} selectAll={selectAll} />
+      <div className="unsub-zone">
+        <button className="btn btn--unsub" onClick={onUnsubscribe} disabled={unsubLoading}>
+          {unsubLoading ? '처리 중...' : '전체 구독 해지'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+function StepEmail({
+  email, setEmail,
+}: {
+  email: string;
+  setEmail: (v: string) => void;
+}) {
+  return (
+    <>
+      <div className="form-card__head">
+        <h3 className="form-card__title">이메일 주소를 알려주세요</h3>
       </div>
       <p className="form-card__sub">
-        선택한 카테고리 {selectedCount}개의 새 공지를 매일 08:00 이 주소로 보내드립니다.
+        매일 08:00 새 공지를 보내드립니다. 이미 구독 중이라면 구독 정보를 바로 확인할 수 있어요.
       </p>
       <div className="field">
         <label className="field__label" htmlFor="emailInput">이메일 주소</label>
@@ -356,11 +394,27 @@ function StepCode({
   );
 }
 
-function StepDone({ email, count }: { email: string; count: number }) {
+type DoneKind = 'subscribed' | 'updated' | 'unsubscribed';
+
+function StepDone({ email, count, kind }: { email: string; count: number; kind: DoneKind }) {
+  if (kind === 'unsubscribed') {
+    return (
+      <div className="success">
+        <div className="success__mark success__mark--unsub">✕</div>
+        <h3 className="success__title">구독이 해지되었습니다</h3>
+        <p className="success__sub">
+          <strong>{email}</strong>의 모든 구독이 해지되었습니다.<br />
+          언제든 다시 구독할 수 있어요.
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="success">
       <div className="success__mark">✓</div>
-      <h3 className="success__title">구독이 완료되었습니다</h3>
+      <h3 className="success__title">
+        {kind === 'updated' ? '구독이 변경되었습니다' : '구독이 완료되었습니다'}
+      </h3>
       <p className="success__sub">
         내일 아침 08:00, <strong>{email}</strong>로<br />
         선택하신 {count}개 카테고리의 새 공지가 도착합니다.
@@ -422,11 +476,14 @@ function MailPreview({ selected }: { selected: string[] }) {
 
 function Subscribe() {
   const [step, setStep] = useState(1);
+  const [mode, setMode] = useState<'new' | 'existing' | null>(null);
+  const [doneKind, setDoneKind] = useState<DoneKind>('subscribed');
   const [selected, setSelected] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [unsubLoading, setUnsubLoading] = useState(false);
 
   const toggleCat = (v: string) => {
     setSelected(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
@@ -438,10 +495,9 @@ function Subscribe() {
 
   const goNext = async () => {
     setError(null);
+
+    // Step 1: 이메일 입력 → 인증번호 발송
     if (step === 1) {
-      if (selected.length === 0) { setError('구독할 카테고리를 1개 이상 골라주세요.'); return; }
-      setStep(2);
-    } else if (step === 2) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         setError('올바른 이메일 형식이 아닙니다.'); return;
       }
@@ -456,12 +512,38 @@ function Subscribe() {
           const err = await res.json().catch(() => ({}));
           throw new Error((err as { detail?: string }).detail || '인증번호 발송에 실패했습니다.');
         }
+        setStep(2);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+      } finally { setLoading(false); }
+
+    // Step 2: 인증번호 확인 → 기존/신규 분기
+    } else if (step === 2) {
+      if (code.join('').length !== 6) { setError('6자리 인증번호를 모두 입력해주세요.'); return; }
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ email: email.trim(), auth_code: code.join('') });
+        const res = await fetch(`${API_BASE}/subscriptions/me?${params}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { detail?: string }).detail || '인증에 실패했거나 인증번호가 만료되었습니다.');
+        }
+        const data = await res.json() as { is_registered: boolean; subscribed_categories: string[] };
+        if (data.is_registered) {
+          setMode('existing');
+          setSelected(data.subscribed_categories);
+        } else {
+          setMode('new');
+          setSelected([]);
+        }
         setStep(3);
       } catch (e) {
         setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
       } finally { setLoading(false); }
+
+    // Step 3: 카테고리 선택 완료 or 구독 변경 저장
     } else if (step === 3) {
-      if (code.join('').length !== 6) { setError('6자리 인증번호를 모두 입력해주세요.'); return; }
+      if (selected.length === 0) { setError('구독할 카테고리를 1개 이상 골라주세요.'); return; }
       setLoading(true);
       try {
         const res = await fetch(`${API_BASE}/subscriptions`, {
@@ -471,8 +553,9 @@ function Subscribe() {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          throw new Error((err as { detail?: string }).detail || '인증에 실패했거나 인증번호가 만료되었습니다.');
+          throw new Error((err as { detail?: string }).detail || '저장에 실패했습니다.');
         }
+        setDoneKind(mode === 'existing' ? 'updated' : 'subscribed');
         setStep(4);
       } catch (e) {
         setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
@@ -480,13 +563,39 @@ function Subscribe() {
     }
   };
 
-  const barTitle = step === 4 ? '구독 완료' : '공지 구독하기';
-  const barSub = [
-    '카테고리를 골라 메일링을 시작하세요',
-    '받아볼 이메일 주소를 알려주세요',
-    '인증번호로 본인 메일을 확인합니다',
-    '내일 아침부터 새 공지를 받아보세요',
-  ][step - 1];
+  const handleUnsubscribe = async () => {
+    setError(null);
+    setUnsubLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/subscriptions/me`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), auth_code: code.join('') }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { detail?: string }).detail || '구독 해지에 실패했습니다.');
+      }
+      setDoneKind('unsubscribed');
+      setStep(4);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+    } finally { setUnsubLoading(false); }
+  };
+
+  const barTitle = step === 4
+    ? doneKind === 'unsubscribed' ? '구독 해지 완료' : mode === 'existing' ? '구독 변경 완료' : '구독 완료'
+    : mode === 'existing' && step === 3 ? '구독 관리' : '공지 구독하기';
+
+  const barSub = step === 4
+    ? doneKind === 'unsubscribed' ? '구독이 해지되었습니다' : '내일 아침부터 새 공지를 받아보세요'
+    : [
+        '이메일 주소를 입력해주세요',
+        '인증번호로 본인 메일을 확인합니다',
+        mode === 'existing' ? '카테고리를 수정하거나 구독을 해지할 수 있어요' : '받고 싶은 카테고리를 골라주세요',
+      ][step - 1];
+
+  const nextLabel = mode === 'existing' && step === 3 ? '구독 변경 저장' : step === 1 ? '인증번호 받기' : step === 2 ? '확인' : '구독 완료';
 
   return (
     <section className="subscribe-page" id="subscribe">
@@ -499,17 +608,23 @@ function Subscribe() {
         </div>
         <div className="sub-grid">
           <div>
-            <Stepper step={step} onJump={goStep} />
+            <Stepper step={step} onJump={goStep} mode={mode} />
             <div className="form-card">
               <div className="form-card__bar">
                 <h4>{barTitle}</h4>
                 <p>{barSub}</p>
               </div>
               <div className="form-card__inner">
-                {step === 1 && <StepCategories selected={selected} toggleCat={toggleCat} selectAll={selectAll} />}
-                {step === 2 && <StepEmail email={email} setEmail={setEmail} selectedCount={selected.length} />}
-                {step === 3 && <StepCode email={email} code={code} setCode={setCode} onEditEmail={() => setStep(2)} />}
-                {step === 4 && <StepDone email={email} count={selected.length} />}
+                {step === 1 && <StepEmail email={email} setEmail={setEmail} />}
+                {step === 2 && <StepCode email={email} code={code} setCode={setCode} onEditEmail={() => setStep(1)} />}
+                {step === 3 && mode !== 'existing' && <StepCategories selected={selected} toggleCat={toggleCat} selectAll={selectAll} />}
+                {step === 3 && mode === 'existing' && (
+                  <StepManage
+                    selected={selected} toggleCat={toggleCat} selectAll={selectAll}
+                    onUnsubscribe={handleUnsubscribe} unsubLoading={unsubLoading}
+                  />
+                )}
+                {step === 4 && <StepDone email={email} count={selected.length} kind={doneKind} />}
 
                 {error && <div className="field-error">{error}</div>}
 
@@ -517,18 +632,14 @@ function Subscribe() {
                   <div className="actions">
                     <div className="actions__left">
                       {step > 1 && (
-                        <button className="btn btn--ghost" onClick={goBack} disabled={loading}>
+                        <button className="btn btn--ghost" onClick={goBack} disabled={loading || unsubLoading}>
                           <Arrow flip /> 이전
                         </button>
                       )}
                     </div>
                     <button className="btn btn--primary" onClick={goNext}
-                      disabled={loading || (step === 1 && selected.length === 0)}>
-                      {loading && '처리 중...'}
-                      {!loading && step === 1 && '이메일 입력으로'}
-                      {!loading && step === 2 && '인증번호 받기'}
-                      {!loading && step === 3 && '구독 완료'}
-                      {!loading && <Arrow />}
+                      disabled={loading || unsubLoading || (step === 3 && selected.length === 0)}>
+                      {loading ? '처리 중...' : <>{nextLabel} <Arrow /></>}
                     </button>
                   </div>
                 )}

@@ -11,7 +11,9 @@ from app.models.subscription import Subscriber, Subscription
 from app.schemas.subscription import (
     SubscribeRequest,
     UnsubscribeRequest,
+    FullUnsubscribeRequest,
     SubscriptionResponse,
+    SubscriptionCheckResponse,
 )
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
@@ -21,7 +23,7 @@ def _random_token() -> str:
     return secrets.token_hex(24)
 
 
-async def _verify_auth_code(db: AsyncSession, email: str, code: str):
+async def _verify_auth_code(db: AsyncSession, email: str, code: str, consume: bool = True):
     result = await db.execute(select(AuthCode).where(AuthCode.email == email))
     row = result.scalar_one_or_none()
     if row is None:
@@ -30,7 +32,8 @@ async def _verify_auth_code(db: AsyncSession, email: str, code: str):
         raise HTTPException(400, "인증번호가 만료되었습니다.")
     if row.code != code:
         raise HTTPException(400, "인증번호가 올바르지 않습니다.")
-    await db.execute(delete(AuthCode).where(AuthCode.email == email))
+    if consume:
+        await db.execute(delete(AuthCode).where(AuthCode.email == email))
 
 
 async def _get_or_create_subscriber(db: AsyncSession, email: str) -> Subscriber:
@@ -44,6 +47,45 @@ async def _get_or_create_subscriber(db: AsyncSession, email: str) -> Subscriber:
         subscriber.unsub_token = _random_token()
         await db.flush()
     return subscriber
+
+
+@router.get("/me", response_model=SubscriptionCheckResponse)
+async def get_my_subscriptions(
+    email: str = Query(...),
+    auth_code: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    email = email.lower().strip()
+    await _verify_auth_code(db, email, auth_code.strip(), consume=False)
+
+    result = await db.execute(select(Subscriber).where(Subscriber.email == email))
+    subscriber = result.scalar_one_or_none()
+
+    if subscriber is None:
+        return SubscriptionCheckResponse(email=email, subscribed_categories=[], is_registered=False)
+
+    result = await db.execute(
+        select(Subscription.category).where(Subscription.subscriber_id == subscriber.id)
+    )
+    categories = list(result.scalars().all())
+    return SubscriptionCheckResponse(email=email, subscribed_categories=categories, is_registered=True)
+
+
+@router.delete("/me", response_model=SubscriptionResponse)
+async def full_unsubscribe(body: FullUnsubscribeRequest, db: AsyncSession = Depends(get_db)):
+    email = body.email.lower().strip()
+    await _verify_auth_code(db, email, body.auth_code.strip(), consume=True)
+
+    result = await db.execute(select(Subscriber).where(Subscriber.email == email))
+    subscriber = result.scalar_one_or_none()
+    if subscriber is None:
+        raise HTTPException(404, "등록된 구독 정보가 없습니다.")
+
+    await db.execute(delete(Subscription).where(Subscription.subscriber_id == subscriber.id))
+    await db.execute(delete(Subscriber).where(Subscriber.id == subscriber.id))
+    await db.commit()
+
+    return SubscriptionResponse(email=email, subscribed_categories=[])
 
 
 @router.post("", response_model=SubscriptionResponse, status_code=201)
