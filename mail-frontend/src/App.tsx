@@ -1,9 +1,57 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import UnsubscribePage from './UnsubscribePage';
 import PrivacyPage from './PrivacyPage';
 import TermsPage from './TermsPage';
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8001';
+
+/* ───────── Confetti ─────────────────────────────────────── */
+const CONFETTI_COLORS = ['#4ec6c1', '#3aa9a4', '#f5c518', '#22c55e', '#f87171', '#a78bfa', '#38bdf8', '#fb923c'];
+
+function Confetti() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const pieces = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -20 - Math.random() * 200,
+      w: 6 + Math.random() * 8, h: 10 + Math.random() * 6,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      rot: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.15,
+      vx: (Math.random() - 0.5) * 2.5,
+      vy: 2.5 + Math.random() * 3.5,
+      opacity: 1,
+    }));
+    let raf: number;
+    let done = false;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let allOut = true;
+      for (const p of pieces) {
+        p.x += p.vx; p.y += p.vy; p.rot += p.rotSpeed;
+        if (p.y > canvas.height * 0.7) p.opacity = Math.max(0, p.opacity - 0.025);
+        if (p.y < canvas.height + 20) allOut = false;
+        ctx.save();
+        ctx.globalAlpha = p.opacity;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+      if (!allOut && !done) raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => { done = true; cancelAnimationFrame(raf); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 999 }} />;
+}
 
 /* ───────── Ticker data ──────────────────────────────────── */
 const TICKER_ITEMS = [
@@ -384,7 +432,9 @@ function StepCode({
 
 function StepDone({ email, count }: { email: string; count: number }) {
   return (
-    <div className="success">
+    <>
+      <Confetti />
+      <div className="success">
       <div className="success__mark">✓</div>
       <h3 className="success__title">구독이 완료되었습니다</h3>
       <p className="success__sub">
@@ -393,6 +443,7 @@ function StepDone({ email, count }: { email: string; count: number }) {
       </p>
       <div className="success__meta">첫 메일까지 약 {nextEightCountdown()}</div>
     </div>
+    </>
   );
 }
 
