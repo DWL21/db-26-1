@@ -330,6 +330,7 @@ function StepCode({
         <h3 className="form-card__title">인증번호를 확인해주세요</h3>
       </div>
       <p className="form-card__sub">방금 발송된 6자리 인증번호를 입력해주세요. (최대 5분 소요)</p>
+      <p className="form-card__spam-hint">메일이 오지 않으면 <strong>스팸메일함</strong>을 확인해주세요.</p>
       <div className="recap">
         <span className="recap__label">To</span>
         <span className="recap__value">{email}</span>

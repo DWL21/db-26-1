@@ -262,9 +262,9 @@ def _cleanup_job():
 
 
 def run_scheduler():
-    schedule.every().day.at("08:00").do(_job)
-    schedule.every().monday.at("03:00").do(_cleanup_job)
-    logger.info("스케줄러 시작 — 매일 08:00 발송 / 매주 월요일 03:00 cleanup")
+    schedule.every().day.at("08:00", "Asia/Seoul").do(_job)
+    schedule.every().monday.at("03:00", "Asia/Seoul").do(_cleanup_job)
+    logger.info("스케줄러 시작 — 매일 08:00 KST 발송 / 매주 월요일 03:00 KST cleanup")
 
     while True:
         schedule.run_pending()
