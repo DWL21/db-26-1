@@ -1,29 +1,25 @@
 from datetime import date
 from app.config import settings
 
-_STATUS_BADGE = (
-    "display:inline-block;padding:3px 7px;font-size:12px;"
-    "text-align:center;border-radius:3px;white-space:nowrap;box-sizing:border-box;"
-)
-
-_CATEGORY_BADGE = (
-    "display:inline-block;padding:3px 6px;font-size:12px;"
-    "text-align:center;border-radius:3px;white-space:nowrap;box-sizing:border-box;"
+_BADGE_BASE = (
+    "display:inline-block;width:70px;padding:4px 0;font-size:12px;"
+    "text-align:center;border-radius:3px;white-space:nowrap;overflow:hidden;"
+    "text-overflow:ellipsis;box-sizing:border-box;"
 )
 
 
 def _status_style(status: str) -> str:
     if status == "진행":
-        return _STATUS_BADGE + "font-weight:600;color:#fff;background-color:#4ec6c1;"
+        return _BADGE_BASE + "font-weight:600;color:#fff;background-color:#4ec6c1;"
     if status == "마감":
-        return _STATUS_BADGE + "font-weight:600;color:#fff;background-color:#e74c3c;"
+        return _BADGE_BASE + "font-weight:600;color:#fff;background-color:#e74c3c;"
     if status == "완료":
-        return _STATUS_BADGE + "font-weight:600;color:#fff;background-color:#aaa;"
+        return _BADGE_BASE + "font-weight:600;color:#fff;background-color:#aaa;"
     return ""
 
 
 def _category_style() -> str:
-    return _CATEGORY_BADGE + "color:#888;border:1px solid #ccc;"
+    return _BADGE_BASE + "color:#888;border:1px solid #ccc;"
 
 
 def _render_notice_row(notice: dict) -> str:
@@ -47,10 +43,10 @@ def _render_notice_row(notice: dict) -> str:
 
     return f"""
     <tr style="border-bottom:1px solid #f0f0f0;height:52px;">
-      <td style="padding:0 4px 0 8px;height:52px;vertical-align:middle;text-align:center;white-space:nowrap;">
+      <td style="padding:0 8px;height:52px;vertical-align:middle;text-align:center;">
         {status_html}
       </td>
-      <td style="padding:0 8px 0 4px;height:52px;vertical-align:middle;text-align:center;white-space:nowrap;min-width:96px;">
+      <td style="padding:0 8px;height:52px;vertical-align:middle;text-align:center;">
         {category_html}
       </td>
       <td style="padding:0 8px;height:52px;vertical-align:middle;">
