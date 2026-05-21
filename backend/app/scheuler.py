@@ -7,7 +7,7 @@ import time
 from sqlalchemy import select, delete
 
 from app.database import AsyncSessionLocal
-from app.models.subscriber_notice import SubscriberNotice
+from app.models.notice import Notice
 from app.models.subscription import Subscriber, Subscription
 from app.services.notice_collector import fetch_notices_from_crawler
 from app.email_template import build_email_html
@@ -35,16 +35,14 @@ async def _fetch_by_categories(categories: set[str]) -> tuple[dict[str, list[dic
     return category_raw, failed
 
 
-async def _sent_links_for(db, subscriber_id: int) -> set[str]:
-    result = await db.execute(
-        select(SubscriberNotice.link).where(SubscriberNotice.subscriber_id == subscriber_id)
-    )
+async def _existing_links(db) -> set[str]:
+    result = await db.execute(select(Notice.link))
     return set(result.scalars().all())
 
 
-async def _record_sent(db, subscriber_id: int, links: set[str]) -> None:
+async def _record_new_links(db, links: set[str]) -> None:
     for link in links:
-        db.add(SubscriberNotice(subscriber_id=subscriber_id, link=link))
+        db.add(Notice(link=link))
     await db.commit()
 
 
@@ -74,7 +72,17 @@ async def _collect_and_send():
             logger.info("크롤링 가능한 카테고리 없음, 발송 스킵")
             return
 
+        existing_links = await _existing_links(db)
+
+        new_by_category: dict[str, list[dict]] = {}
+        for cat, notices in category_raw.items():
+            new_by_category[cat] = [
+                n for n in notices
+                if n.get("link") and n["link"] not in existing_links
+            ]
+
         today = date.today()
+        sent_link_pool: set[str] = set()
 
         for sid, info in subscriber_map.items():
             subscriber = info["subscriber"]
@@ -84,14 +92,12 @@ async def _collect_and_send():
                 logger.info("실패 카테고리 구독으로 이번 회차 스킵: %s", subscriber.email)
                 continue
 
-            sent_links = await _sent_links_for(db, sid)
-
             matched: list[dict] = []
             seen: set[str] = set()
             for cat in cats:
-                for n in category_raw.get(cat, []):
+                for n in new_by_category.get(cat, []):
                     link = n.get("link")
-                    if link and link not in sent_links and link not in seen:
+                    if link and link not in seen:
                         seen.add(link)
                         matched.append(n)
 
@@ -103,64 +109,52 @@ async def _collect_and_send():
 
             try:
                 send_email(subscriber.email, subject, html_body=html)
-                await _record_sent(db, sid, seen)
+                sent_link_pool |= seen
                 logger.info("발송 완료: %s (%d건)", subscriber.email, len(matched))
             except Exception:
-                await db.rollback()
                 logger.exception("발송 실패: %s", subscriber.email)
+
+        if sent_link_pool:
+            await _record_new_links(db, sent_link_pool)
 
 
 async def _cleanup_old_records():
-    """60일 초과 subscriber_notices 레코드 삭제"""
+    """60일 초과 notices 레코드 삭제"""
     cutoff = datetime.now(timezone.utc) - timedelta(days=60)
     async with AsyncSessionLocal() as db:
         result = await db.execute(
-            delete(SubscriberNotice).where(SubscriberNotice.sent_at < cutoff)
+            delete(Notice).where(Notice.created_at < cutoff)
         )
         await db.commit()
         deleted = result.rowcount
         if deleted:
-            logger.info("cleanup: %d개 오래된 발송 이력 삭제", deleted)
+            logger.info("cleanup: %d개 오래된 공지 기록 삭제", deleted)
 
 
 async def seed_existing_notices() -> None:
-    """부팅 시 1회 — 현재 page=1의 링크를 모든 기존 구독자의 발송 이력에 사전 저장.
+    """부팅 시 1회 — 현재 구독 카테고리 page=1 링크를 notices 에 사전 저장.
     첫 cron 시점의 누적분 폭주 발송을 차단한다. 메일 발송은 하지 않는다."""
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(Subscriber, Subscription.category)
-            .join(Subscription, Subscriber.id == Subscription.subscriber_id)
-        )
-        rows = result.all()
+        result = await db.execute(select(Subscription.category).distinct())
+        all_categories = set(result.scalars().all())
 
-        if not rows:
-            logger.info("seed: 구독자 없음")
+        if not all_categories:
+            logger.info("seed: 구독 카테고리 없음")
             return
-
-        subscriber_map: dict[int, dict] = {}
-        all_categories: set[str] = set()
-        for subscriber, category in rows:
-            if subscriber.id not in subscriber_map:
-                subscriber_map[subscriber.id] = {"subscriber": subscriber, "categories": set()}
-            subscriber_map[subscriber.id]["categories"].add(category)
-            all_categories.add(category)
 
         category_raw, _ = await _fetch_by_categories(all_categories)
 
-        total = 0
-        for sid, info in subscriber_map.items():
-            sent_links = await _sent_links_for(db, sid)
-            new_links: set[str] = set()
-            for cat in info["categories"]:
-                for n in category_raw.get(cat, []):
-                    link = n.get("link")
-                    if link and link not in sent_links and link not in new_links:
-                        new_links.add(link)
-            if new_links:
-                await _record_sent(db, sid, new_links)
-                total += len(new_links)
+        existing_links = await _existing_links(db)
+        new_links: set[str] = set()
+        for notices in category_raw.values():
+            for n in notices:
+                link = n.get("link")
+                if link and link not in existing_links and link not in new_links:
+                    new_links.add(link)
 
-        logger.info("seed 완료: %d 구독자에게 총 %d 링크 사전 저장", len(subscriber_map), total)
+        if new_links:
+            await _record_new_links(db, new_links)
+        logger.info("seed 완료: %d 링크 사전 저장", len(new_links))
 
 
 async def _fetch_notices_for_categories(categories: set[str]) -> list[dict]:
@@ -182,8 +176,48 @@ async def _fetch_notices_for_categories(categories: set[str]) -> list[dict]:
     return result
 
 
+async def _fetch_until_cutoff(
+    categories: set[str], cutoff: date, max_pages: int = 5
+) -> list[dict]:
+    """카테고리별로 페이지를 늘려가며 게시일이 cutoff 이전인 공지를 만날 때까지 크롤링.
+    카테고리당 max_pages 까지가 안전 상한. 링크 기준 중복 제거."""
+    seen: set[str] = set()
+    result: list[dict] = []
+    for cat in categories:
+        cat_param = "" if cat == "전체" else cat
+        for page in range(1, max_pages + 1):
+            try:
+                page_notices = await fetch_notices_from_crawler(page=page, category=cat_param)
+            except Exception:
+                logger.exception("크롤링 실패: cat=%s page=%d", cat, page)
+                break
+            if not page_notices:
+                break
+
+            oldest: date | None = None
+            for n in page_notices:
+                link = n.get("link")
+                if link and link not in seen:
+                    seen.add(link)
+                    result.append(n)
+                try:
+                    d = datetime.strptime(n.get("date", ""), "%Y.%m.%d").date()
+                    if oldest is None or d < oldest:
+                        oldest = d
+                except (ValueError, TypeError):
+                    continue
+
+            if oldest is not None and oldest < cutoff:
+                break
+        else:
+            logger.warning("cat=%s max_pages=%d 도달, 3일 윈도우 끝까지 못 봤을 가능성", cat, max_pages)
+    return result
+
+
 async def send_now_to_subscriber(subscriber_id: int, categories: set[str]) -> None:
-    """구독 완료 직후 현재 공지사항을 1회 즉시 발송하고 발송 이력에 기록."""
+    """구독 완료 직후 백필 발송 — '게시일 3일 이내' 이면서 '이미 notices 에 기록된'
+    link 만 보낸다. 아직 notices 에 없는 link 는 다음 크론에서 전 구독자에게
+    함께 발송되므로 여기서 건드리지 않는다. INSERT 도 하지 않는다."""
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(Subscriber).where(Subscriber.id == subscriber_id)
@@ -191,14 +225,24 @@ async def send_now_to_subscriber(subscriber_id: int, categories: set[str]) -> No
         subscriber = result.scalar_one_or_none()
         if subscriber is None:
             return
+        existing_links = await _existing_links(db)
 
-        sent_links = await _sent_links_for(db, subscriber_id)
+    cutoff = date.today() - timedelta(days=3)
+    notices = await _fetch_until_cutoff(categories, cutoff)
 
-    notices = await _fetch_notices_for_categories(categories)
-    notices = [n for n in notices if n.get("link") and n["link"] not in sent_links]
+    def _within_window(n: dict) -> bool:
+        try:
+            return datetime.strptime(n.get("date", ""), "%Y.%m.%d").date() >= cutoff
+        except (ValueError, TypeError):
+            return False
+
+    notices = [
+        n for n in notices
+        if n.get("link") and n["link"] in existing_links and _within_window(n)
+    ]
 
     if not notices:
-        logger.info("즉시 발송 스킵: 새 공지 없음 (%s)", subscriber.email)
+        logger.info("즉시 발송 스킵: 최근 3일 공지 없음 (%s)", subscriber.email)
         return
 
     today = date.today()
@@ -207,9 +251,6 @@ async def send_now_to_subscriber(subscriber_id: int, categories: set[str]) -> No
 
     try:
         send_email(subscriber.email, subject, html_body=html)
-        async with AsyncSessionLocal() as db:
-            new_links = {n["link"] for n in notices}
-            await _record_sent(db, subscriber_id, new_links)
         logger.info("즉시 발송 완료: %s (%d건)", subscriber.email, len(notices))
     except Exception:
         logger.exception("즉시 발송 실패: %s", subscriber.email)
