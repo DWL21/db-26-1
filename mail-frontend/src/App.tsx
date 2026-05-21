@@ -184,6 +184,52 @@ function Ticker() {
   );
 }
 
+/* ───────── Splash screen ───────────────────────────────── */
+function Splash({ onDone }: { onDone: () => void }) {
+  const [hide, setHide] = useState(false);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setHide(true), 1400);
+    const t2 = setTimeout(() => onDone(), 1900);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [onDone]);
+
+  return (
+    <div className={`splash ${hide ? 'splash--hide' : ''}`}>
+      <div className="splash__logo">
+        숭실<em>메일</em>
+        <span className="splash__dot" />
+      </div>
+      <div className="splash__sub">ssu-mail</div>
+    </div>
+  );
+}
+
+/* ───────── Ripple button ────────────────────────────────── */
+function RippleBtn({ className, onClick, children, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = btnRef.current;
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      const ripple = document.createElement('span');
+      const size = Math.max(rect.width, rect.height);
+      ripple.className = 'ripple';
+      ripple.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px`;
+      btn.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+    }
+    onClick?.(e);
+  };
+
+  return (
+    <button ref={btnRef} className={`ripple-btn ${className ?? ''}`} onClick={handleClick} {...rest}>
+      {children}
+    </button>
+  );
+}
+
 /* ───────── Header ───────────────────────────────────────── */
 function Header() {
   return (
@@ -385,11 +431,11 @@ function StepCategories({
         {CATEGORIES.map(c => {
           const on = selected.includes(c.value);
           return (
-            <button key={c.value} className={`chip ${on ? 'chip--on' : ''}`}
+            <RippleBtn key={c.value} className={`chip ${on ? 'chip--on chip--bounce' : ''}`}
               onClick={() => toggleCat(c.value)} aria-pressed={on}>
               <Tick />
               {c.value}
-            </button>
+            </RippleBtn>
           );
         })}
       </div>
@@ -918,6 +964,7 @@ function getHash() {
 
 export default function App() {
   useFadeIn();
+  const [splashDone, setSplashDone] = useState(false);
 
   const unsubscribeToken = useMemo(
     () => new URLSearchParams(window.location.search).get('unsubscribe'),
@@ -946,6 +993,7 @@ export default function App() {
 
   return (
     <>
+      {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
       <MouseGlow />
       <Header />
       <Hero />
