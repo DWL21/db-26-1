@@ -116,7 +116,7 @@ async def subscribe(body: SubscribeRequest, background_tasks: BackgroundTasks, d
     subscribed = list(result.scalars().all())
 
     try:
-        from app.scheuler import send_now_to_subscriber
+        from app.scheduler import send_now_to_subscriber
         background_tasks.add_task(send_now_to_subscriber, subscriber.id, set(subscribed))
     except Exception:
         pass
