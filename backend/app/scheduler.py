@@ -215,7 +215,7 @@ async def _fetch_until_cutoff(
 
 
 async def send_now_to_subscriber(subscriber_id: int, categories: set[str]) -> None:
-    """구독 완료 직후 백필 발송 — '게시일 3일 이내' 이면서 '이미 notices 에 기록된'
+    """구독 완료 직후 백필 발송 — '게시일 7일 이내' 이면서 '이미 notices 에 기록된'
     link 만 보낸다. 아직 notices 에 없는 link 는 다음 크론에서 전 구독자에게
     함께 발송되므로 여기서 건드리지 않는다. INSERT 도 하지 않는다."""
     async with AsyncSessionLocal() as db:
@@ -227,7 +227,7 @@ async def send_now_to_subscriber(subscriber_id: int, categories: set[str]) -> No
             return
         existing_links = await _existing_links(db)
 
-    cutoff = date.today() - timedelta(days=3)
+    cutoff = date.today() - timedelta(days=7)
     notices = await _fetch_until_cutoff(categories, cutoff)
 
     def _within_window(n: dict) -> bool:
