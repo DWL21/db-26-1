@@ -317,7 +317,7 @@ function HowItWorks() {
     { n: '3', title: '인증 후 구독 완료', body: '6자리 인증번호를 확인하면 끝. 매일 아침 08시, 새 공지가 자동으로 도착합니다.' },
   ];
   return (
-    <section className="section" id="how">
+    <section className="section fade-section" id="how">
       <div className="wrap">
         <div className="section__head">
           <div className="section__label">How it works</div>
@@ -397,6 +397,8 @@ function StepCategories({
   );
 }
 
+const EMAIL_DOMAINS = ['@soongsil.ac.kr', '@gmail.com', '@naver.com', '@kakao.com'];
+
 function StepEmail({
   email, setEmail, selectedCount,
 }: {
@@ -404,6 +406,21 @@ function StepEmail({
   setEmail: (v: string) => void;
   selectedCount: number;
 }) {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setEmail(val);
+    const atIdx = val.indexOf('@');
+    if (atIdx !== -1) {
+      const typed = val.slice(atIdx);
+      const filtered = EMAIL_DOMAINS.filter(d => d.startsWith(typed) && d !== typed);
+      setSuggestions(filtered.map(d => val.slice(0, atIdx) + d));
+    } else {
+      setSuggestions([]);
+    }
+  };
+
   return (
     <>
       <div className="form-card__head">
@@ -412,11 +429,20 @@ function StepEmail({
       <p className="form-card__sub">
         선택한 카테고리 {selectedCount}개의 새 공지를 매일 08:00 이 주소로 보내드립니다.
       </p>
-      <div className="field">
+      <div className="field" style={{ position: 'relative' }}>
         <label className="field__label" htmlFor="emailInput">이메일 주소</label>
         <input id="emailInput" className="input" type="email"
           placeholder="20261234@soongsil.ac.kr" value={email}
-          onChange={e => setEmail(e.target.value)} autoFocus autoComplete="email" spellCheck={false} />
+          onChange={handleChange} autoFocus autoComplete="off" spellCheck={false} />
+        {suggestions.length > 0 && (
+          <div className="email-suggestions">
+            {suggestions.map(s => (
+              <button key={s} className="email-suggestion" onMouseDown={() => { setEmail(s); setSuggestions([]); }}>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );
@@ -431,6 +457,16 @@ function StepCode({
   onEditEmail: () => void;
 }) {
   const value = code.join('');
+  const [secs, setSecs] = useState(300);
+
+  useEffect(() => {
+    setSecs(300);
+    const id = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+  const ss = String(secs % 60).padStart(2, '0');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -444,14 +480,17 @@ function StepCode({
       <div className="form-card__head">
         <h3 className="form-card__title">인증번호를 확인해주세요</h3>
       </div>
-      <p className="form-card__sub">방금 발송된 6자리 인증번호를 입력해주세요. (최대 5분 소요)</p>
+      <p className="form-card__sub">방금 발송된 6자리 인증번호를 입력해주세요.</p>
       <div className="recap">
         <span className="recap__label">To</span>
         <span className="recap__value">{email}</span>
         <button className="recap__edit" onClick={onEditEmail}>변경</button>
       </div>
       <div className="field">
-        <label className="field__label" htmlFor="codeInput">인증번호 6자리</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <label className="field__label" htmlFor="codeInput" style={{ margin: 0 }}>인증번호 6자리</label>
+          <span className={`code-timer ${secs <= 60 ? 'code-timer--warn' : ''}`}>{mm}:{ss}</span>
+        </div>
         <input
           id="codeInput"
           className="input"
@@ -465,6 +504,7 @@ function StepCode({
           autoComplete="one-time-code"
           spellCheck={false}
         />
+        {secs === 0 && <p style={{ marginTop: 6, fontSize: 12, color: 'var(--danger)' }}>인증번호가 만료됐습니다. 이전으로 돌아가 다시 요청해주세요.</p>}
       </div>
     </>
   );
@@ -669,8 +709,9 @@ function Subscribe() {
   );
 }
 
-/* ───────── FAQ ──────────────────────────────────────────── */
+/* ───────── FAQ 아코디언 ─────────────────────────────────── */
 function FAQ() {
+  const [open, setOpen] = useState<number | null>(null);
   const qs = [
     { q: '유료인가요?', a: '아니요, 모두 무료입니다. 광고도, 트래킹 픽셀도 넣지 않습니다. 학내 공지를 더 쉽게 받아보자는 학생 사이드 프로젝트로 운영됩니다.' },
     { q: '공식 채널인가요?', a: '학교 공식 서비스는 아닙니다. 숭실대학교 홈페이지의 공개 공지를 크롤링해 정리해 보내드리며, 원문은 항상 메일 안의 링크에서 확인할 수 있습니다.' },
@@ -678,7 +719,7 @@ function FAQ() {
     { q: '어떤 정보를 저장하나요?', a: '메일 주소와 선택한 카테고리만 저장합니다. 학번이나 비밀번호는 저장하지 않으며, 발송 외 다른 용도로 사용하지 않습니다.' },
   ];
   return (
-    <section className="section" id="faq">
+    <section className="section fade-section" id="faq">
       <div className="wrap">
         <div className="section__head">
           <div className="section__label">FAQ</div>
@@ -686,11 +727,17 @@ function FAQ() {
         </div>
         <div className="faq">
           {qs.map((it, i) => (
-            <div className="faq__item" key={i}>
+            <div className={`faq__item faq__item--accordion ${open === i ? 'faq__item--open' : ''}`} key={i}
+              onClick={() => setOpen(open === i ? null : i)}>
               <span className="faq__num">{i + 1}</span>
-              <div>
-                <h3 className="faq__q">{it.q}</h3>
-                <p className="faq__a">{it.a}</p>
+              <div style={{ flex: 1 }}>
+                <div className="faq__q-row">
+                  <h3 className="faq__q">{it.q}</h3>
+                  <span className="faq__chevron">{open === i ? '−' : '+'}</span>
+                </div>
+                <div className="faq__body" style={{ maxHeight: open === i ? '200px' : '0' }}>
+                  <p className="faq__a">{it.a}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -746,6 +793,19 @@ function Footer() {
 
 /* ───────── App ──────────────────────────────────────────── */
 /* ───────── Scroll to top ────────────────────────────────── */
+/* ───────── Scroll fade-in hook ─────────────────────────── */
+function useFadeIn() {
+  useEffect(() => {
+    const els = document.querySelectorAll('.fade-section');
+    const io = new IntersectionObserver(
+      entries => entries.forEach(e => e.target.classList.toggle('fade-section--visible', e.isIntersecting)),
+      { threshold: 0.12 }
+    );
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+}
+
 /* ───────── Mouse glow ───────────────────────────────────── */
 function MouseGlow() {
   const glowRef = useRef<HTMLDivElement>(null);
@@ -857,6 +917,8 @@ function getHash() {
 }
 
 export default function App() {
+  useFadeIn();
+
   const unsubscribeToken = useMemo(
     () => new URLSearchParams(window.location.search).get('unsubscribe'),
     []

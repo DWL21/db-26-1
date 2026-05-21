@@ -1280,3 +1280,82 @@ body {
   pointer-events: none;
   z-index: 0;
 }
+
+/* ─── Scroll fade-in ─────────────────────────────────────── */
+.fade-section {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.fade-section--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── FAQ 아코디언 ───────────────────────────────────────── */
+.faq__item--accordion {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.faq__q-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.faq__chevron {
+  font-size: 20px;
+  color: var(--teal);
+  font-weight: 400;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.faq__body {
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+.faq__body .faq__a {
+  padding-top: 10px;
+}
+
+/* ─── 이메일 자동완성 ────────────────────────────────────── */
+.email-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: var(--panel);
+  border: 1px solid var(--teal-100);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+.email-suggestion {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.12s;
+}
+.email-suggestion:last-child { border-bottom: none; }
+.email-suggestion:hover { background: var(--teal-50); color: var(--teal-2); }
+
+/* ─── 인증번호 타이머 ────────────────────────────────────── */
+.code-timer {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal-2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.code-timer--warn { color: var(--danger); }
