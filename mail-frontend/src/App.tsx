@@ -362,16 +362,35 @@ function HowItWorks() {
     { n: '2', title: '이메일 주소를 입력합니다', body: '받아볼 메일 주소를 알려주세요. 학교 메일도 개인 메일도 모두 가능합니다.' },
     { n: '3', title: '인증 후 구독 완료', body: '6자리 인증번호를 확인하면 끝. 매일 아침 08시, 새 공지가 자동으로 도착합니다.' },
   ];
+  const [visible, setVisible] = useState<boolean[]>([false, false, false]);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          steps.forEach((_, i) => {
+            setTimeout(() => setVisible(prev => { const next = [...prev]; next[i] = true; return next; }), i * 180);
+          });
+          io.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+    if (sectionRef.current) io.observe(sectionRef.current);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <section className="section fade-section" id="how">
+    <section className="section" id="how" ref={sectionRef}>
       <div className="wrap">
         <div className="section__head">
           <div className="section__label">How it works</div>
           <h2 className="section__title">세 단계면 충분합니다.</h2>
         </div>
         <div className="how">
-          {steps.map(s => (
-            <div className="how__step" key={s.n}>
+          {steps.map((s, i) => (
+            <div className={`how__step how__step--anim ${visible[i] ? 'how__step--visible' : ''}`} key={s.n}>
               <span className="how__num">{s.n}</span>
               <h3>{s.title}</h3>
               <p>{s.body}</p>
