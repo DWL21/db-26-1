@@ -1,5 +1,8 @@
 from datetime import date
+<<<<<<< HEAD
 
+=======
+>>>>>>> MultiSendEmail
 from app.config import settings
 
 _STYLES = """\
@@ -56,6 +59,7 @@ def _render_notice_card(notice: dict) -> str:
     </tr>"""
 
 
+<<<<<<< HEAD
 def build_email_html(
     notices: list[dict],
     target_date: date | None = None,
@@ -63,10 +67,20 @@ def build_email_html(
     welcome: bool = False,
     max_notices: int = 100,
 ) -> str:
+=======
+def build_email_html(notices: list[dict], target_date: date | None = None, unsub_token: str | None=None, ) -> str:
+    """공지사항 목록을 HTML 이메일 본문으로 변환한다.
+
+    Args:
+        notices: 크롤러에서 가져온 공지사항 딕셔너리 리스트.
+        target_date: 메일 상단에 표시할 날짜. None이면 오늘 날짜.
+    """
+>>>>>>> MultiSendEmail
     if target_date is None:
         target_date = date.today()
 
     display_date = target_date.strftime("%Y.%m.%d")
+<<<<<<< HEAD
     total_count = len(notices)
     overflow = max(0, total_count - max_notices)
     shown = notices[:max_notices]
@@ -110,7 +124,49 @@ def build_email_html(
               </p>
             </td>
           </tr>"""
+=======
+    count=len(notices)
+    
+    grouped_notices={}
 
+    for notice in notices:
+        category=notice.get("category","기타");
+
+        if not category:
+            category="기타"
+
+        if category not in grouped_notices:
+            grouped_notices[category]=[]
+
+        grouped_notices[category].append(notice)
+
+    rows_html = ""
+
+    for category, items in grouped_notices.items():
+>>>>>>> MultiSendEmail
+
+        rows_html += f"""
+        <tr>
+          <td style="padding:18px 4px 10px;font-size:16px;font-weight:700;color:#333;">
+            {category}
+          </td>
+        </tr>
+        """
+        for notice in items:
+            rows_html += _render_notice_row(notice)
+
+    unsub_html=""
+    
+    if unsub_token:
+        unsub_url = f"{settings.frontend_origin}?unsubscribe={unsub_token}"
+        unsub_html = f"""
+          <tr>
+            <td style="padding:8px 0 0;text-align:center;">
+              <a href="{unsub_url}" style="font-size:11px;color:#bbb;text-decoration:underline;">
+                구독 해지
+              </a>
+            </td>
+          </tr>"""
     return f"""\
 <!DOCTYPE html>
 <html lang="ko">
@@ -125,6 +181,7 @@ def build_email_html(
     <tr>
       <td align="center" style="padding:16px 12px;">
 
+<<<<<<< HEAD
         <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;">
 
           <!-- Header -->
@@ -137,6 +194,23 @@ def build_email_html(
             </td>
           </tr>
           {welcome_html}
+=======
+        <table role="presentation" cellpadding="0" cellspacing="0"
+               style="width:100%;max-width:600px;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#4ec6c1;border-radius:8px 8px 0 0;padding:20px 20px;">
+              <h1 style="margin:0;font-size:18px;font-weight:700;color:#fff;">
+                숭실대학교 공지사항
+              </h1>
+              <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">
+                {display_date} · 새 공지 {count}건
+              </p>
+            </td>
+          </tr>
+
+>>>>>>> MultiSendEmail
           <!-- Body -->
           <tr>
             <td style="background-color:#f9fafb;border-left:1px solid #e8e8e8;border-right:1px solid #e8e8e8;padding:12px 12px 4px;">
@@ -170,6 +244,11 @@ def build_email_html(
               </table>
             </td>
           </tr>
+<<<<<<< HEAD
+=======
+
+        </table>
+>>>>>>> MultiSendEmail
 
         </table>
       </td>
