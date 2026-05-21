@@ -12,7 +12,7 @@ from app.models.subscription import Subscriber, Subscription
 from app.routers import auth, subscription, notice, test_page
 
 try:
-    from app.scheuler import run_scheduler, _collect_and_send, seed_existing_notices, resend_today_to_all
+    from app.scheduler import run_scheduler, _collect_and_send, seed_existing_notices, resend_today_to_all
 except Exception as e:
     logging.getLogger(__name__).warning("scheduler disabled: %s", e)
     run_scheduler = None
