@@ -2,7 +2,7 @@ from datetime import date
 from app.config import settings
 
 _BADGE_BASE = (
-    "display:inline-block;width:70px;padding:4px 0;font-size:12px;"
+    "display:inline-block;width:90px;padding:4px 0;font-size:12px;"
     "text-align:center;border-radius:3px;white-space:nowrap;overflow:hidden;"
     "text-overflow:ellipsis;box-sizing:border-box;"
 )
