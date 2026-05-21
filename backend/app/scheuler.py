@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import asyncio
 import logging
 from datetime import date, datetime, timezone, timedelta
@@ -260,26 +259,6 @@ def _job():
 
 def _cleanup_job():
     asyncio.run(_cleanup_old_records())
-=======
-import schedule
-import time
-import asyncio
-
-from app.email_service import send_email
-from app.database import AsyncSessionLocal, get_emails
-
-
-async def fetch_emails():
-    async with AsyncSessionLocal() as session:
-        emails = await get_emails(session)
-        return emails
-
-
-def job():
-    emails = asyncio.run(fetch_emails())
-    content = "오늘 공지 요약입니다"
->>>>>>> MultiSendEmail
-
 
 
 def run_scheduler():
