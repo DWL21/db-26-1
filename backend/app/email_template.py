@@ -1,5 +1,5 @@
 from datetime import date
-
+from app.config import settings
 
 _BADGE_BASE = (
     "display:inline-block;width:70px;padding:4px 0;font-size:12px;"
@@ -54,7 +54,7 @@ def _render_notice_row(notice: dict) -> str:
     </tr>"""
 
 
-def build_email_html(notices: list[dict], target_date: date | None = None) -> str:
+def build_email_html(notices: list[dict], target_date: date | None = None, unsub_token: str | None=None, ) -> str:
     """공지사항 목록을 HTML 이메일 본문으로 변환한다.
 
     Args:
@@ -65,13 +65,47 @@ def build_email_html(notices: list[dict], target_date: date | None = None) -> st
         target_date = date.today()
 
     display_date = target_date.strftime("%Y.%m.%d")
+    count=len(notices)
+    
+    grouped_notices={}
+
+    for notice in notices:
+        category=notice.get("category","기타");
+
+        if not category:
+            category="기타"
+
+        if category not in grouped_notices:
+            grouped_notices[category]=[]
+
+        grouped_notices[category].append(notice)
 
     rows_html = ""
-    for notice in notices:
-        rows_html += _render_notice_row(notice)
 
-    count = len(notices)
+    for category, items in grouped_notices.items():
 
+        rows_html += f"""
+        <tr>
+          <td style="padding:18px 4px 10px;font-size:16px;font-weight:700;color:#333;">
+            {category}
+          </td>
+        </tr>
+        """
+        for notice in items:
+            rows_html += _render_notice_row(notice)
+
+    unsub_html=""
+    
+    if unsub_token:
+        unsub_url = f"{settings.frontend_origin}?unsubscribe={unsub_token}"
+        unsub_html = f"""
+          <tr>
+            <td style="padding:8px 0 0;text-align:center;">
+              <a href="{unsub_url}" style="font-size:11px;color:#bbb;text-decoration:underline;">
+                구독 해지
+              </a>
+            </td>
+          </tr>"""
     return f"""\
 <!DOCTYPE html>
 <html lang="ko">
@@ -83,74 +117,56 @@ def build_email_html(notices: list[dict], target_date: date | None = None) -> st
 <body style="margin:0;padding:0;background-color:#f5f5f5;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;">
     <tr>
-      <td align="center" style="padding:24px 16px;">
+      <td align="center" style="padding:16px 12px;">
 
-        <!-- Header -->
-        <table role="presentation" width="1000" cellpadding="0" cellspacing="0"
-               style="max-width:1000px;width:100%;background-color:#4ec6c1;border-radius:8px 8px 0 0;">
+        <table role="presentation" cellpadding="0" cellspacing="0"
+               style="width:100%;max-width:600px;">
+
+          <!-- Header -->
           <tr>
-            <td style="padding:28px 32px;">
-              <h1 style="margin:0;font-size:22px;font-weight:700;color:#fff;">
+            <td style="background-color:#4ec6c1;border-radius:8px 8px 0 0;padding:20px 20px;">
+              <h1 style="margin:0;font-size:18px;font-weight:700;color:#fff;">
                 숭실대학교 공지사항
               </h1>
-              <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.85);">
+              <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">
                 {display_date} · 새 공지 {count}건
               </p>
             </td>
           </tr>
-        </table>
 
-        <!-- Body -->
-        <table role="presentation" width="1000" cellpadding="0" cellspacing="0"
-               style="max-width:1000px;width:100%;background-color:#fff;border-left:1px solid #e8e8e8;border-right:1px solid #e8e8e8;">
+          <!-- Body -->
           <tr>
-            <td style="padding:0;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;">
-                <!-- Column Header -->
-                <colgroup>
-                  <col style="width:100px;">
-                  <col style="width:100px;">
-                  <col>
-                  <col style="width:200px;">
-                </colgroup>
-                <tr style="border-bottom:2px solid #e8e8e8;background-color:#fafafa;">
-                  <td style="padding:10px 8px;text-align:center;font-size:12px;font-weight:600;color:#999;">
-                    상태
-                  </td>
-                  <td style="padding:10px 8px;text-align:center;font-size:12px;font-weight:600;color:#999;">
-                    카테고리
-                  </td>
-                  <td style="padding:10px 8px;font-size:12px;font-weight:600;color:#999;">
-                    제목
-                  </td>
-                  <td style="padding:10px 8px;text-align:left;font-size:12px;font-weight:600;color:#999;">
-                    등록부서
-                  </td>
-                </tr>
+            <td style="background-color:#f9fafb;border-left:1px solid #e8e8e8;border-right:1px solid #e8e8e8;padding:12px 12px 4px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 {rows_html}
               </table>
             </td>
           </tr>
-        </table>
 
-        <!-- Footer -->
-        <table role="presentation" width="1000" cellpadding="0" cellspacing="0"
-               style="max-width:1000px;width:100%;background-color:#fafafa;border:1px solid #e8e8e8;border-top:none;border-radius:0 0 8px 8px;">
+          <!-- Footer -->
           <tr>
-            <td style="padding:20px 32px;text-align:center;">
-              <a href="https://scatch.ssu.ac.kr/%ea%b3%b5%ec%a7%80%ec%82%ac%ed%95%ad/"
-                 style="display:inline-block;padding:10px 28px;font-size:13px;font-weight:600;color:#4ec6c1;border:1px solid #4ec6c1;border-radius:4px;text-decoration:none;">
-                전체 공지사항 보기
-              </a>
+            <td style="background-color:#fafafa;border:1px solid #e8e8e8;border-top:none;border-radius:0 0 8px 8px;padding:16px 12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="text-align:center;">
+                    <a href="https://scatch.ssu.ac.kr/%ea%b3%b5%ec%a7%80%ec%82%ac%ed%95%ad/"
+                       style="display:inline-block;padding:10px 24px;font-size:13px;font-weight:600;color:#4ec6c1;border:1px solid #4ec6c1;border-radius:4px;text-decoration:none;">
+                      전체 공지사항 보기
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0 0;text-align:center;">
+                    <p style="margin:0;font-size:11px;color:#bbb;">
+                      본 메일은 숭실대학교 공지사항 구독 서비스에 의해 자동 발송되었습니다.
+                    </p>
+                  </td>
+                </tr>
+                {unsub_html}
+              </table>
             </td>
           </tr>
-          <tr>
-            <td style="padding:0 32px 20px;text-align:center;">
-              <p style="margin:0;font-size:11px;color:#bbb;">
-                본 메일은 숭실대학교 공지사항 구독 서비스에 의해 자동 발송되었습니다.
-              </p>
-            </td>
-          </tr>
+
         </table>
 
       </td>
