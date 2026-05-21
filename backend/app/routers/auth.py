@@ -29,8 +29,8 @@ async def request_code(body: RequestCodeBody, db: AsyncSession = Depends(get_db)
     result = await db.execute(select(AuthCode).where(AuthCode.email == email))
     existing = result.scalar_one_or_none()
 
-    if existing and existing.expires_at - now > timedelta(minutes=9):
-        raise HTTPException(429, "인증번호를 이미 발송했습니다. 1분 후 다시 시도해주세요.")
+    if existing and existing.expires_at - now > timedelta(minutes=9, seconds=30):
+        raise HTTPException(429, "인증번호를 이미 발송했습니다. 30초 후 다시 시도해주세요.")
 
     code = _random_code()
     expires_at = now + timedelta(minutes=10)
