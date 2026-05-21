@@ -1,5 +1,7 @@
 from datetime import date
 
+from premailer import transform
+
 from app.config import settings
 
 _STYLES = """\
@@ -124,7 +126,7 @@ def build_email_html(
             </td>
           </tr>"""
 
-    return f"""\
+    html = f"""\
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -190,3 +192,5 @@ def build_email_html(
   </table>
 </body>
 </html>"""
+
+    return transform(html, keep_style_tags=True, remove_classes=False, disable_validation=True)
