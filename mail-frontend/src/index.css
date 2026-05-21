@@ -857,6 +857,10 @@ body {
   background: var(--muted);
 }
 
+.success__actions {
+  margin-top: 20px;
+}
+
 /* 전체 구독 해지 버튼 영역 */
 .unsub-zone {
   margin-top: 20px;

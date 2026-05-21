@@ -396,7 +396,7 @@ function StepCode({
 
 type DoneKind = 'subscribed' | 'updated' | 'unsubscribed';
 
-function StepDone({ email, count, kind }: { email: string; count: number; kind: DoneKind }) {
+function StepDone({ email, count, kind, onEditSettings }: { email: string; count: number; kind: DoneKind; onEditSettings: () => void }) {
   if (kind === 'unsubscribed') {
     return (
       <div className="success">
@@ -420,6 +420,9 @@ function StepDone({ email, count, kind }: { email: string; count: number; kind: 
         선택하신 {count}개 카테고리의 새 공지가 도착합니다.
       </p>
       <div className="success__meta">첫 메일까지 약 {nextEightCountdown()}</div>
+      <div className="success__actions">
+        <button className="btn btn--ghost" onClick={onEditSettings}>구독 설정 변경</button>
+      </div>
     </div>
   );
 }
@@ -624,7 +627,7 @@ function Subscribe() {
                     onUnsubscribe={handleUnsubscribe} unsubLoading={unsubLoading}
                   />
                 )}
-                {step === 4 && <StepDone email={email} count={selected.length} kind={doneKind} />}
+                {step === 4 && <StepDone email={email} count={selected.length} kind={doneKind} onEditSettings={() => { setCode(['', '', '', '', '', '']); setError(null); setStep(1); }} />}
 
                 {error && <div className="field-error">{error}</div>}
 
