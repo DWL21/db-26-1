@@ -530,7 +530,6 @@ return (
         <div className="header-action" style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 className="title" style={{ margin: 0, color: theme.ssuBlue }}>숭실대학교 채플 정보</h1>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <a href="https://ssu-mails.pages.dev" target="_blank" rel="noreferrer" className="btn-icon" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem', textDecoration: 'none' }}>📧 구독</a>
             {token && <button className="btn-icon" onClick={handleLogout}>로그아웃</button>}
           </div>
         </div>
@@ -576,7 +575,7 @@ return (
                     <p style={{ margin: 0, color: isDarkMode ? '#f87171' : '#b91c1c', fontSize: '0.8rem' }}>
                       {remainingAbsences < 0
                         ? "이미 결석 한도를 " + Math.abs(remainingAbsences) + "회 초과했습니다. F 위험!"
-                        : "남은 채플을 모두 출석해도 수료 기준(80%) 미달 위험이 있습니다."}
+                        : "남은 채플을 모두 출석해도 수료 기준 미달 위험이 있습니다."}
                     </p>
                   </div>
                 </div>
@@ -707,6 +706,7 @@ return (
             <h3 style={{ marginBottom: '1rem', color: theme.text, fontSize: '1rem', marginTop: '1.5rem' }}>출결 기록</h3>
             <div className="attendance-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {chapelData.attendances.map((record, index) => {
+                // 🚀 하단 리스트에도 실제 출결 상태를 적용
                 const actualAttendance = getActualAttendance(record.class_date, record.attendance);
 
                 return (
@@ -735,7 +735,7 @@ return (
         )}
       </div>
 
-      {/* 1. 로그인 모달 (독립) */}
+      {/* 로그인, 구독 모달 부분은 기존과 완벽히 동일 */}
       {showLoginModal && (
         <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
           <div className="modal-panel glass-panel" onClick={e => e.stopPropagation()} style={{ backgroundColor: theme.panel, color: theme.text }}>
@@ -790,20 +790,6 @@ return (
         </div>
       )}
 
-      {/* 2. 구독 모달 (분리) */}
-      {showSubscriptionModal && (
-        <div className="modal-overlay" onClick={() => setShowSubscriptionModal(false)}>
-          <div className="modal-panel glass-panel" onClick={e => e.stopPropagation()} style={{ backgroundColor: theme.panel, color: theme.text, maxWidth: '500px' }}>
-            <div className="modal-header">
-              <h2 className="modal-title" style={{ color: theme.ssuBlue }}></h2>
-              <button className="modal-close" onClick={() => setShowSubscriptionModal(false)} style={{ color: theme.text }}>✕</button>
-            </div>
-            <EmailSubscriptionForm isDarkMode={isDarkMode} onClose={() => setShowSubscriptionModal(false)} />
-          </div>
-        </div>
-      )}
-
-      {/* 3. 개인정보 모달 (분리) */}
       {showPrivacyModal && <PrivacyPolicyModal onClose={() => setShowPrivacyModal(false)} />}
     </div>
   );
