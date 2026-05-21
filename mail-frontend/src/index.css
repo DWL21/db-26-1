@@ -1413,6 +1413,17 @@ body {
   100% { transform: scale(1); }
 }
 
+/* ─── How it works 순서 등장 ─────────────────────────────── */
+.how__step--anim {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.how__step--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* ─── Ripple button ──────────────────────────────────────── */
 .ripple-btn {
   position: relative;
