@@ -145,8 +145,28 @@ body {
   height: 12px;
 }
 @media (max-width: 680px) {
+  .site-header__row {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    row-gap: 10px;
+  }
+  .site-nav {
+    display: contents;
+  }
+  .brand {
+    order: 1;
+  }
+  .site-nav__back {
+    order: 2;
+  }
   .site-nav__links {
-    display: none;
+    order: 3;
+    flex-basis: 100%;
+    display: inline-flex;
+    justify-content: flex-start;
+    gap: 28px;
   }
 }
 
