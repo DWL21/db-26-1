@@ -37,6 +37,8 @@ def _render_notice_row(notice: dict) -> str:
     if link and not link.startswith("http"):
         link = f"https://scatch.ssu.ac.kr{link}"
 
+    date_str = notice.get("date", "")
+
     return f"""
     <tr style="border-bottom:1px solid #f0f0f0;height:52px;">
       <td style="padding:0 8px;height:52px;vertical-align:middle;text-align:center;">
@@ -50,6 +52,9 @@ def _render_notice_row(notice: dict) -> str:
       </td>
       <td style="padding:0 8px;height:52px;vertical-align:middle;text-align:left;color:#999;font-size:13px;">
         {notice.get("department", "")}
+      </td>
+      <td style="padding:0 8px;height:52px;vertical-align:middle;text-align:left;color:#bbb;font-size:12px;white-space:nowrap;">
+        {date_str}
       </td>
     </tr>"""
 
