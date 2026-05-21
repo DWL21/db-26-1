@@ -110,9 +110,12 @@ function nextEight() {
 type Step = 1 | 2 | 3 | 4;
 
 const STEP_INFO: Record<number, { label: string; title: string; desc: string }> = {
-  1: { label: 'STEP 01', title: '카테고리 선택', desc: '받고 싶은 공지 유형을 골라주세요.' },
-  2: { label: 'STEP 02', title: '이메일 입력', desc: '매일 08:00에 이 주소로 발송됩니다.' },
-  3: { label: 'STEP 03', title: '인증번호 확인', desc: '메일로 받은 6자리 코드를 입력해주세요.' },
+  1: { label: 'STEP 01', title: '이메일 입력', desc: '매일 08:00에 이 주소로 발송됩니다.' },
+  2: { label: 'STEP 02', title: '인증번호 확인', desc: '메일로 받은 6자리 코드를 입력해주세요.' },
+  3: { label: 'STEP 03', title: '카테고리 선택', desc: '받고 싶은 공지 유형을 골라주세요.' },
+};
+const STEP_INFO_EXISTING: Partial<typeof STEP_INFO> = {
+  3: { label: 'STEP 03', title: '구독 수정', desc: '카테고리를 수정하거나 전체 해지할 수 있습니다.' },
 };
 
 function NoticePreview({ selected }: { selected: string[] }) {
@@ -151,6 +154,8 @@ function NoticePreview({ selected }: { selected: string[] }) {
 
 export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: boolean; onToggleTheme?: () => void }) {
   const [step, setStep] = useState<Step>(1);
+  const [mode, setMode] = useState<'new' | 'existing'>('new');
+  const [unsubscribed, setUnsubscribed] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -167,9 +172,6 @@ export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: bool
   const next = async () => {
     setError(null);
     if (step === 1) {
-      if (!selected.length) { setError('카테고리를 1개 이상 선택해주세요.'); return; }
-      setStep(2);
-    } else if (step === 2) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         setError('올바른 이메일 형식이 아닙니다.'); return;
       }
@@ -188,16 +190,43 @@ export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: bool
             throw new Error((e as { detail?: string }).detail || '인증번호 발송 실패');
           }
         }
-        setStep(3);
+        setStep(2);
       } catch (e) {
         setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
       } finally { setLoading(false); }
-    } else if (step === 3) {
+    } else if (step === 2) {
       if (code.length !== 6) { setError('6자리 인증번호를 입력해주세요.'); return; }
       setLoading(true);
       try {
         if (DEMO_MODE) {
           await sleep(1200);
+          setMode('new');
+        } else {
+          const res = await fetch(
+            `${API_BASE}/subscriptions/me?email=${encodeURIComponent(email.trim())}&auth_code=${encodeURIComponent(code)}`,
+          );
+          if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            throw new Error((e as { detail?: string }).detail || '인증 실패');
+          }
+          const data = await res.json();
+          if (data.is_registered) {
+            setMode('existing');
+            setSelected(data.subscribed_categories);
+          } else {
+            setMode('new');
+          }
+        }
+        setStep(3);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+      } finally { setLoading(false); }
+    } else if (step === 3) {
+      if (!selected.length) { setError('카테고리를 1개 이상 선택해주세요.'); return; }
+      setLoading(true);
+      try {
+        if (DEMO_MODE) {
+          await sleep(1000);
         } else {
           const res = await fetch(`${API_BASE}/subscriptions`, {
             method: 'POST',
@@ -206,7 +235,7 @@ export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: bool
           });
           if (!res.ok) {
             const e = await res.json().catch(() => ({}));
-            throw new Error((e as { detail?: string }).detail || '인증 실패');
+            throw new Error((e as { detail?: string }).detail || '처리 실패');
           }
         }
         setStep(4);
@@ -215,6 +244,33 @@ export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: bool
       } finally { setLoading(false); }
     }
   };
+
+  const handleUnsubscribe = async () => {
+    if (!window.confirm('구독을 전체 해지하시겠습니까?')) return;
+    setError(null);
+    setLoading(true);
+    try {
+      if (DEMO_MODE) {
+        await sleep(1000);
+      } else {
+        const res = await fetch(`${API_BASE}/subscriptions/me`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), auth_code: code }),
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error((e as { detail?: string }).detail || '해지 실패');
+        }
+      }
+      setUnsubscribed(true);
+      setStep(4);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+    } finally { setLoading(false); }
+  };
+
+  const stepInfo = (mode === 'existing' && step === 3 ? STEP_INFO_EXISTING[3] : null) ?? STEP_INFO[step];
 
   return (
     <div className="sub-wrap">
@@ -232,9 +288,9 @@ export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: bool
         <div className="sub-card">
           {step !== 4 && (
             <>
-              <div className="sub-card__step">{STEP_INFO[step].label}</div>
-              <h1 className="sub-card__title">{STEP_INFO[step].title}</h1>
-              <p className="sub-card__desc">{STEP_INFO[step].desc}</p>
+              <div className="sub-card__step">{stepInfo.label}</div>
+              <h1 className="sub-card__title">{stepInfo.title}</h1>
+              <p className="sub-card__desc">{stepInfo.desc}</p>
               <div className="prog">
                 {[1, 2, 3].map(n => (
                   <div key={n} className={`prog__dot ${step === n ? 'prog__dot--active' : step > n ? 'prog__dot--done' : ''}`} />
@@ -244,7 +300,45 @@ export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: bool
           )}
 
           {step === 1 && (
+            <div className="inp-wrap">
+              <label className="inp-label" htmlFor="emailInp">이메일 주소</label>
+              <input
+                id="emailInp" className="inp" type="email"
+                placeholder="20261234@soongsil.ac.kr"
+                value={email} onChange={e => setEmail(e.target.value)}
+                autoFocus autoComplete="email"
+              />
+              <div className="inp-hint">학교 메일·개인 메일 모두 가능합니다.</div>
+            </div>
+          )}
+
+          {step === 2 && (
             <>
+              <div className="recap">
+                <span className="recap__email">{email}</span>
+                <button className="recap__edit" onClick={() => { setError(null); setStep(1); }}>변경</button>
+              </div>
+              <div className="inp-wrap">
+                <label className="inp-label" htmlFor="codeInp">인증번호 6자리</label>
+                <input
+                  id="codeInp" className="inp" type="text" inputMode="numeric"
+                  maxLength={6} placeholder="000000" value={code}
+                  onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  autoFocus autoComplete="one-time-code"
+                />
+                <div className="inp-hint">인증번호는 10분간 유효합니다.</div>
+              </div>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              {mode === 'existing' && (
+                <div className="recap" style={{ marginBottom: '0.75rem' }}>
+                  <span className="recap__email">{email}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--success, #22c55e)', fontWeight: 600 }}>기존 구독 중</span>
+                </div>
+              )}
               <div className="cat-meta">
                 <span className="cat-meta__count"><span>{selected.length}</span> / {CATEGORIES.length}</span>
                 <button className="cat-meta__all" onClick={selectAll}>
@@ -270,38 +364,11 @@ export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: bool
                 })}
               </div>
               <NoticePreview selected={selected} />
-            </>
-          )}
-
-          {step === 2 && (
-            <div className="inp-wrap">
-              <label className="inp-label" htmlFor="emailInp">이메일 주소</label>
-              <input
-                id="emailInp" className="inp" type="email"
-                placeholder="20261234@soongsil.ac.kr"
-                value={email} onChange={e => setEmail(e.target.value)}
-                autoFocus autoComplete="email"
-              />
-              <div className="inp-hint">학교 메일·개인 메일 모두 가능합니다.</div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <>
-              <div className="recap">
-                <span className="recap__email">{email}</span>
-                <button className="recap__edit" onClick={() => { setError(null); setStep(2); }}>변경</button>
-              </div>
-              <div className="inp-wrap">
-                <label className="inp-label" htmlFor="codeInp">인증번호 6자리</label>
-                <input
-                  id="codeInp" className="inp" type="text" inputMode="numeric"
-                  maxLength={6} placeholder="000000" value={code}
-                  onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  autoFocus autoComplete="one-time-code"
-                />
-                <div className="inp-hint">인증번호는 5분간 유효합니다.</div>
-              </div>
+              {mode === 'existing' && (
+                <button className="btn-unsub" onClick={handleUnsubscribe} disabled={loading}>
+                  구독 전체 해지
+                </button>
+              )}
             </>
           )}
 
@@ -309,13 +376,17 @@ export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: bool
 
           {step === 4 && (
             <div className="done">
-              <span className="done__icon">✦</span>
-              <h2 className="done__title">구독 완료</h2>
+              <span className="done__icon">{unsubscribed ? '👋' : '✦'}</span>
+              <h2 className="done__title">
+                {unsubscribed ? '구독 해지 완료' : mode === 'existing' ? '구독 수정 완료' : '구독 완료'}
+              </h2>
               <p className="done__desc">
-                내일 아침 08:00부터<br />
-                <strong>{email}</strong>로 공지를 보내드립니다.
+                {unsubscribed
+                  ? <>{email}의 구독이 해지되었습니다.</>
+                  : <>내일 아침 08:00부터<br /><strong>{email}</strong>로 공지를 보내드립니다.</>
+                }
               </p>
-              <div className="done__badge">⏰ 첫 메일까지 약 {nextEight()}</div>
+              {!unsubscribed && <div className="done__badge">⏰ 첫 메일까지 약 {nextEight()}</div>}
               <br />
               <a href="#" className="btn-home">홈으로 돌아가기</a>
             </div>
@@ -330,8 +401,13 @@ export default function SubscribePage({ isDark, onToggleTheme }: { isDark?: bool
                   ← 이전
                 </button>
               )}
-              <button className="btn-go" onClick={next} disabled={loading || (step === 1 && selected.length === 0)}>
-                {loading ? <><Spinner /> 처리 중</> : step === 3 ? '구독 완료 →' : '다음 →'}
+              <button className="btn-go" onClick={next}
+                disabled={loading || (step === 3 && selected.length === 0)}>
+                {loading
+                  ? <><Spinner /> 처리 중</>
+                  : step === 1 ? '인증번호 받기 →'
+                  : step === 2 ? '확인 →'
+                  : mode === 'existing' ? '수정 완료 →' : '구독 완료 →'}
               </button>
             </div>
           )}

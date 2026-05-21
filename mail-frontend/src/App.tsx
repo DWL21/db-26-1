@@ -401,11 +401,11 @@ function HowItWorks() {
 }
 
 /* ───────── Subscribe flow ───────────────────────────────── */
-function Stepper({ step, onJump }: { step: number; onJump: (n: number) => void }) {
+function Stepper({ step, onJump, mode }: { step: number; onJump: (n: number) => void; mode?: 'new' | 'existing' }) {
   const items = [
-    { n: 1, label: '카테고리' },
-    { n: 2, label: '이메일' },
-    { n: 3, label: '인증' },
+    { n: 1, label: '이메일' },
+    { n: 2, label: '인증' },
+    { n: 3, label: mode === 'existing' ? '수정' : '카테고리' },
   ];
   return (
     <div className="steps">
@@ -573,19 +573,26 @@ function StepCode({
   );
 }
 
-function StepDone({ email, count }: { email: string; count: number }) {
+function StepDone({ email, count, unsubscribed, mode }: {
+  email: string; count: number; unsubscribed?: boolean; mode?: 'new' | 'existing';
+}) {
   return (
     <>
-      <Confetti />
+      {!unsubscribed && <Confetti />}
       <div className="success">
-      <div className="success__mark">✓</div>
-      <h3 className="success__title">구독이 완료되었습니다</h3>
-      <p className="success__sub">
-        내일 아침 08:00, <strong>{email}</strong>로<br />
-        선택하신 {count}개 카테고리의 새 공지가 도착합니다.
-      </p>
-      <div className="success__meta">첫 메일까지 약 {nextEightCountdown()}</div>
-    </div>
+        <div className="success__mark">{unsubscribed ? '👋' : '✓'}</div>
+        <h3 className="success__title">
+          {unsubscribed ? '구독 해지 완료' : mode === 'existing' ? '구독 수정 완료' : '구독이 완료되었습니다'}
+        </h3>
+        <p className="success__sub">
+          {unsubscribed
+            ? <>{email}의 구독이 해지되었습니다.</>
+            : <>내일 아침 08:00, <strong>{email}</strong>로<br />
+               {mode === 'existing' ? '수정된 ' : '선택하신 '}{count}개 카테고리의 새 공지가 도착합니다.</>
+          }
+        </p>
+        {!unsubscribed && <div className="success__meta">첫 메일까지 약 {nextEightCountdown()}</div>}
+      </div>
     </>
   );
 }
@@ -642,6 +649,8 @@ function MailPreview({ selected }: { selected: string[] }) {
 
 function Subscribe() {
   const [step, setStep] = useState(1);
+  const [mode, setMode] = useState<'new' | 'existing'>('new');
+  const [unsubscribed, setUnsubscribed] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -659,9 +668,6 @@ function Subscribe() {
   const goNext = async () => {
     setError(null);
     if (step === 1) {
-      if (selected.length === 0) { setError('구독할 카테고리를 1개 이상 골라주세요.'); return; }
-      setStep(2);
-    } else if (step === 2) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         setError('올바른 이메일 형식이 아닙니다.'); return;
       }
@@ -676,12 +682,34 @@ function Subscribe() {
           const err = await res.json().catch(() => ({}));
           throw new Error((err as { detail?: string }).detail || '인증번호 발송에 실패했습니다.');
         }
+        setStep(2);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+      } finally { setLoading(false); }
+    } else if (step === 2) {
+      if (code.join('').length !== 6) { setError('6자리 인증번호를 모두 입력해주세요.'); return; }
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `${API_BASE}/subscriptions/me?email=${encodeURIComponent(email.trim())}&auth_code=${encodeURIComponent(code.join(''))}`,
+        );
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { detail?: string }).detail || '인증에 실패했거나 인증번호가 만료되었습니다.');
+        }
+        const data = await res.json();
+        if (data.is_registered) {
+          setMode('existing');
+          setSelected(data.subscribed_categories);
+        } else {
+          setMode('new');
+        }
         setStep(3);
       } catch (e) {
         setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
       } finally { setLoading(false); }
     } else if (step === 3) {
-      if (code.join('').length !== 6) { setError('6자리 인증번호를 모두 입력해주세요.'); return; }
+      if (selected.length === 0) { setError('구독할 카테고리를 1개 이상 골라주세요.'); return; }
       setLoading(true);
       try {
         const res = await fetch(`${API_BASE}/subscriptions`, {
@@ -691,7 +719,7 @@ function Subscribe() {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          throw new Error((err as { detail?: string }).detail || '인증에 실패했거나 인증번호가 만료되었습니다.');
+          throw new Error((err as { detail?: string }).detail || '처리에 실패했습니다.');
         }
         setStep(4);
       } catch (e) {
@@ -700,12 +728,35 @@ function Subscribe() {
     }
   };
 
-  const barTitle = step === 4 ? '구독 완료' : '공지 구독하기';
+  const handleUnsubscribe = async () => {
+    if (!window.confirm('구독을 전체 해지하시겠습니까?')) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/subscriptions/me`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), auth_code: code.join('') }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { detail?: string }).detail || '해지에 실패했습니다.');
+      }
+      setUnsubscribed(true);
+      setStep(4);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+    } finally { setLoading(false); }
+  };
+
+  const barTitle = step === 4
+    ? (unsubscribed ? '구독 해지 완료' : mode === 'existing' ? '구독 수정 완료' : '구독 완료')
+    : step === 3 && mode === 'existing' ? '구독 수정하기' : '공지 구독하기';
   const barSub = [
-    '카테고리를 골라 메일링을 시작하세요',
     '받아볼 이메일 주소를 알려주세요',
     '인증번호로 본인 메일을 확인합니다',
-    '내일 아침부터 새 공지를 받아보세요',
+    mode === 'existing' ? '카테고리를 수정하거나 해지할 수 있습니다' : '카테고리를 골라 메일링을 시작하세요',
+    unsubscribed ? '구독 해지가 완료되었습니다' : '내일 아침부터 새 공지를 받아보세요',
   ][step - 1];
 
   return (
@@ -719,17 +770,26 @@ function Subscribe() {
         </div>
         <div className="sub-grid">
           <div>
-            <Stepper step={step} onJump={goStep} />
+            <Stepper step={step} onJump={goStep} mode={mode} />
             <div className="form-card">
               <div className="form-card__bar">
                 <h4>{barTitle}</h4>
                 <p>{barSub}</p>
               </div>
               <div className="form-card__inner">
-                {step === 1 && <StepCategories selected={selected} toggleCat={toggleCat} selectAll={selectAll} />}
-                {step === 2 && <StepEmail email={email} setEmail={setEmail} selectedCount={selected.length} />}
-                {step === 3 && <StepCode email={email} code={code} setCode={setCode} onEditEmail={() => setStep(2)} />}
-                {step === 4 && <StepDone email={email} count={selected.length} />}
+                {step === 1 && <StepEmail email={email} setEmail={setEmail} selectedCount={selected.length} />}
+                {step === 2 && <StepCode email={email} code={code} setCode={setCode} onEditEmail={() => { setError(null); setStep(1); }} />}
+                {step === 3 && (
+                  <>
+                    <StepCategories selected={selected} toggleCat={toggleCat} selectAll={selectAll} />
+                    {mode === 'existing' && (
+                      <button className="btn-unsub" onClick={handleUnsubscribe} disabled={loading}>
+                        구독 전체 해지
+                      </button>
+                    )}
+                  </>
+                )}
+                {step === 4 && <StepDone email={email} count={selected.length} unsubscribed={unsubscribed} mode={mode} />}
 
                 {error && <div className="field-error">{error}</div>}
 
@@ -743,11 +803,11 @@ function Subscribe() {
                       )}
                     </div>
                     <button className="btn btn--primary" onClick={goNext}
-                      disabled={loading || (step === 1 && selected.length === 0)}>
+                      disabled={loading || (step === 3 && selected.length === 0)}>
                       {loading && '처리 중...'}
-                      {!loading && step === 1 && '이메일 입력으로'}
-                      {!loading && step === 2 && '인증번호 받기'}
-                      {!loading && step === 3 && '구독 완료'}
+                      {!loading && step === 1 && '인증번호 받기'}
+                      {!loading && step === 2 && '인증번호 확인'}
+                      {!loading && step === 3 && (mode === 'existing' ? '수정 완료' : '구독 완료')}
                       {!loading && <Arrow />}
                     </button>
                   </div>

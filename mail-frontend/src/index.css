@@ -756,6 +756,25 @@ body {
   border-radius: var(--r-sm);
 }
 
+/* unsubscribe button */
+.btn-unsub {
+  margin-top: 20px;
+  width: 100%;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid var(--danger);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.12s, background 0.12s;
+}
+.btn-unsub:hover:not(:disabled) { opacity: 1; background: #fdecea; }
+.btn-unsub:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* recap */
 .recap {
   display: flex;
