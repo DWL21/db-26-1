@@ -1182,6 +1182,14 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* ─── Typing cursor ──────────────────────────────────────── */
+.hero__cursor {
+  display: inline-block;
+  color: var(--teal);
+  font-weight: 300;
+  margin-left: 2px;
+}
+
 /* ─── Ticker ─────────────────────────────────────────────── */
 .ticker {
   background: var(--panel);

@@ -247,21 +247,58 @@ function HeroMailMock() {
   );
 }
 
+const HERO_LINES = ['놓치기엔 너무 중요한 공지를,', '한 통의 메일로.'];
+
 function Hero() {
+  const [line1, setLine1] = useState('');
+  const [line2, setLine2] = useState('');
+  const [showCursor, setShowCursor] = useState(true);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const type = async () => {
+      await new Promise(r => setTimeout(r, 300));
+      for (let i = 1; i <= HERO_LINES[0].length; i++) {
+        if (cancelled) return;
+        setLine1(HERO_LINES[0].slice(0, i));
+        await new Promise(r => setTimeout(r, 45));
+      }
+      await new Promise(r => setTimeout(r, 180));
+      for (let i = 1; i <= HERO_LINES[1].length; i++) {
+        if (cancelled) return;
+        setLine2(HERO_LINES[1].slice(0, i));
+        await new Promise(r => setTimeout(r, 55));
+      }
+      await new Promise(r => setTimeout(r, 400));
+      if (!cancelled) setDone(true);
+    };
+    type();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (done) return;
+    const id = setInterval(() => setShowCursor(p => !p), 530);
+    return () => clearInterval(id);
+  }, [done]);
+
   return (
     <section className="hero" id="top">
       <div className="wrap hero__grid">
         <div>
           <div className="eyebrow hero__eyebrow">숭실메일 · ssu-mail</div>
           <h1 className="hero__title">
-            놓치기엔 너무 중요한 공지를,{' '}
-            <em>한 통의 메일</em>로.
+            {line1 || <span style={{ opacity: 0 }}>{HERO_LINES[0]}</span>}
+            {' '}
+            {line2 ? <em>{line2}</em> : null}
+            {!done && <span className="hero__cursor" style={{ opacity: showCursor ? 1 : 0 }}>|</span>}
           </h1>
-          <p className="hero__lede">
+          <p className="hero__lede" style={{ opacity: done ? 1 : 0, transition: 'opacity 0.6s' }}>
             장학금 마감, 수강신청, 채용 공고까지 — 흩어진 학교 공지를
             카테고리별로 골라 매일 아침 한 번에 정리해 보내드립니다.
           </p>
-          <a href="#subscribe" className="btn-hero-cta">
+          <a href="#subscribe" className="btn-hero-cta" style={{ opacity: done ? 1 : 0, transition: 'opacity 0.6s 0.2s' }}>
             지금 구독하기 <Arrow />
           </a>
         </div>
