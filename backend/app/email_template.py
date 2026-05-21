@@ -54,7 +54,7 @@ def _render_notice_row(notice: dict) -> str:
     </tr>"""
 
 
-def build_email_html(notices: list[dict], target_date: date | None = None, unsub_token: str | None=None, ) -> str:
+def build_email_html(notices: list[dict], target_date: date | None = None, unsub_token: str | None = None, welcome: bool = False) -> str:
     """공지사항 목록을 HTML 이메일 본문으로 변환한다.
 
     Args:
@@ -94,8 +94,23 @@ def build_email_html(notices: list[dict], target_date: date | None = None, unsub
         for notice in items:
             rows_html += _render_notice_row(notice)
 
-    unsub_html=""
-    
+    welcome_html = ""
+    if welcome:
+        welcome_html = """
+          <tr>
+            <td style="background-color:#eaf7f6;border-left:1px solid #e8e8e8;border-right:1px solid #e8e8e8;padding:18px 20px;">
+              <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#2e8c87;">
+                구독해주셔서 감사합니다! 🎉
+              </p>
+              <p style="margin:0;font-size:13px;color:#555;line-height:1.6;">
+                구독 시점 기준 최근 3일간의 공지사항을 먼저 보내드립니다.<br>
+                내일부터는 매일 아침 08:00에 새 공지가 도착합니다.
+              </p>
+            </td>
+          </tr>"""
+
+    unsub_html = ""
+
     if unsub_token:
         unsub_url = f"{settings.frontend_origin}?unsubscribe={unsub_token}"
         unsub_html = f"""
@@ -133,6 +148,8 @@ def build_email_html(notices: list[dict], target_date: date | None = None, unsub
               </p>
             </td>
           </tr>
+
+          {welcome_html}
 
           <!-- Body -->
           <tr>
