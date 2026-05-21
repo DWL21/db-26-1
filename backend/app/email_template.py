@@ -18,9 +18,6 @@ def _status_style(status: str) -> str:
     return ""
 
 
-def _category_style() -> str:
-    return _BADGE_BASE + "color:#888;border:1px solid #ccc;"
-
 
 def _render_notice_row(notice: dict) -> str:
     status_html = (
@@ -29,25 +26,17 @@ def _render_notice_row(notice: dict) -> str:
         else ""
     )
 
-    category_html = (
-        f'<span style="{_category_style()}">{notice["category"]}</span>'
-        if notice.get("category")
-        else ""
-    )
-
     link = notice.get("link", "#")
     if link and not link.startswith("http"):
         link = f"https://scatch.ssu.ac.kr{link}"
 
-    date_str = notice.get("date", "")
+    raw_date = notice.get("date", "")
+    date_str = ".".join(raw_date.split(".")[1:]) if raw_date.count(".") == 2 else raw_date
 
     return f"""
     <tr style="border-bottom:1px solid #f0f0f0;height:52px;">
       <td style="padding:0 8px;height:52px;vertical-align:middle;text-align:center;">
         {status_html}
-      </td>
-      <td style="padding:0 8px;height:52px;vertical-align:middle;text-align:center;">
-        {category_html}
       </td>
       <td style="padding:0 8px;height:52px;vertical-align:middle;">
         <a href="{link}" style="color:#333;text-decoration:none;font-size:14px;">{notice["title"]}</a>
